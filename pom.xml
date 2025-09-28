@@ -22,13 +22,10 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-
         <java.version>21</java.version>
         <logback.version>1.4.11</logback.version>
-        <emoji-java.version>5.1.1</emoji-java.version>
         <hutool-all.version>5.8.22</hutool-all.version>
         <forms_rt.version>7.0.3</forms_rt.version>
-        <fastjson.version>2.0.40</fastjson.version>
         <lombok.version>1.18.30</lombok.version>
         <mybatis.version>3.5.19</mybatis.version>
         <sqlite-jdbc.version>3.43.0.0</sqlite-jdbc.version>
@@ -36,14 +33,11 @@
         <commons-lang3.version>3.13.0</commons-lang3.version>
         <guava.version>32.1.2-jre</guava.version>
         <okhttp.version>4.12.0</okhttp.version>
-        <google.zxing.core.version>3.5.3</google.zxing.core.version>
         <flatlaf.version>3.5.4</flatlaf.version>
         <flatlaf-extras.version>3.5.4</flatlaf-extras.version>
         <flatlaf-intellij-themes.version>3.5.4</flatlaf-intellij-themes.version>
         <flatlaf-fonts-jetbrains-mono.version>2.304</flatlaf-fonts-jetbrains-mono.version>
-        <flatlaf-fonts-inter.version>4.0</flatlaf-fonts-inter.version>
         <rsyntaxtextarea.version>3.5.4</rsyntaxtextarea.version>
-        <sql-formatter.version>2.0.4</sql-formatter.version>
         <cron-utils.version>9.2.1</cron-utils.version>
         <jna.version>5.13.0</jna.version>
         <oshi-core.version>6.4.6</oshi-core.version>
@@ -51,16 +45,11 @@
         <versioncompare.version>1.5.0</versioncompare.version>
         <groovy.version>4.0.26</groovy.version>
         <jsoup.version>1.16.2</jsoup.version>
-        <jalopy.version>1.5rc3</jalopy.version>
         <itextpdf.version>5.5.1</itextpdf.version>
-        <snakeyaml.version>1.23</snakeyaml.version>
         <javafaker.version>1.0.2</javafaker.version>
         <bcprov-jdk15on.version>1.70</bcprov-jdk15on.version>
         <tika.version>3.0.0</tika.version>
         <jackson-databind.version>2.13.3</jackson-databind.version>
-        <eclipse-lsp4j.version>0.12.0</eclipse-lsp4j.version>
-        <tarpackagebash>tarpackage.sh</tarpackagebash>
-
     </properties>
 
     <repositories>
@@ -114,11 +103,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>com.vdurmont</groupId>
-                <artifactId>emoji-java</artifactId>
-                <version>${emoji-java.version}</version>
-            </dependency>
             <!--GUI Designer -> binary class files-->
             <dependency>
                 <groupId>com.intellij</groupId>
@@ -173,14 +157,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-
-
-            <dependency>
-                <groupId>com.google.zxing</groupId>
-                <artifactId>core</artifactId>
-                <version>${google.zxing.core.version}</version>
-            </dependency>
-
             <dependency>
                 <groupId>com.formdev</groupId>
                 <artifactId>flatlaf</artifactId>
@@ -325,12 +301,6 @@
                 <version>0.1.55</version>
             </dependency>
             <dependency>
-                <groupId>com.github.vertical-blank</groupId>
-                <artifactId>sql-formatter</artifactId>
-                <version>${sql-formatter.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>com.jayway.jsonpath</groupId>
                 <artifactId>json-path</artifactId>
                 <version>2.6.0</version>
@@ -396,24 +366,11 @@
                 <artifactId>jsoup</artifactId>
                 <version>${jsoup.version}</version>
             </dependency>
-
-            <dependency>
-                <groupId>jalopy</groupId>
-                <artifactId>jalopy</artifactId>
-                <version>${jalopy.version}</version>
-            </dependency>
-
             <dependency>
                 <groupId>com.itextpdf</groupId>
                 <artifactId>itextpdf</artifactId>
                 <version>${itextpdf.version}</version>
                 <type>jar</type>
-            </dependency>
-
-            <dependency>
-                <groupId>org.yaml</groupId>
-                <artifactId>snakeyaml</artifactId>
-                <version>${snakeyaml.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.pig-mesh.ai</groupId>

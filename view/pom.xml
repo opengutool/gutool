@@ -23,10 +23,6 @@
             <artifactId>domain</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.vdurmont</groupId>
-            <artifactId>emoji-java</artifactId>
-        </dependency>
         <!--GUI Designer -> binary class files-->
         <dependency>
             <groupId>com.intellij</groupId>
@@ -63,10 +59,6 @@
                     <groupId>org.jetbrains.kotlin</groupId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.google.zxing</groupId>
-            <artifactId>core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.formdev</groupId>
@@ -163,10 +155,6 @@
             <artifactId>jsch</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.vertical-blank</groupId>
-            <artifactId>sql-formatter</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
             <exclusions>
@@ -213,22 +201,12 @@
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>jalopy</groupId>
-            <artifactId>jalopy</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itextpdf</artifactId>
             <type>jar</type>
         </dependency>
 
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-        </dependency>
         <dependency>
             <groupId>io.github.pig-mesh.ai</groupId>
             <artifactId>deepseek4j-core</artifactId>
