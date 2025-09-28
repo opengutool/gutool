@@ -1,0 +1,36 @@
+package io.github.opengutool.views.component.textviewer;
+
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+
+import javax.swing.event.HyperlinkEvent;
+import java.awt.*;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+public class JsonRSyntaxTextViewer extends CommonRSyntaxTextViewer {
+    public JsonRSyntaxTextViewer() {
+
+        addHyperlinkListener(e -> {
+            if (HyperlinkEvent.EventType.ACTIVATED.equals(e.getEventType())) {
+                Desktop desktop = Desktop.getDesktop();
+                try {
+                    desktop.browse(new URI(e.getURL().toString()));
+                } catch (IOException | URISyntaxException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+
+        setDoubleBuffered(true);
+
+        updateTheme();
+    }
+
+    public void updateTheme() {
+        super.updateTheme();
+
+        setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+        setCodeFoldingEnabled(true);
+    }
+}
