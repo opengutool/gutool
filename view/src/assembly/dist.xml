@@ -26,6 +26,11 @@
             <fileMode>0755</fileMode>
         </fileSet>
         <fileSet>
+            <directory>src/assembly/icns</directory>
+            <outputDirectory>icns</outputDirectory>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
             <directory>${project.build.directory}</directory>
             <includes>
                 <include>gutool.jar</include>
