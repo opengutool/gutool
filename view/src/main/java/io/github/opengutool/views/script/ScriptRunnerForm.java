@@ -12,6 +12,7 @@ import io.github.opengutool.domain.func.GutoolFunc;
 import io.github.opengutool.domain.func.GutoolFuncContainer;
 import io.github.opengutool.domain.func.GutoolFuncTabPanel;
 import io.github.opengutool.domain.func.GutoolFuncTabPanelDefineButton;
+import io.github.opengutool.domain.func.GutoolFuncTabPanelDefineCron;
 import io.github.opengutool.repository.GutoolPoQueryRepository;
 import io.github.opengutool.repository.GutoolPoRepository;
 import io.github.opengutool.repository.po.GutoolFuncRunHistoryPo;
@@ -21,14 +22,13 @@ import io.github.opengutool.views.util.JTableUtil;
 import io.github.opengutool.views.util.UndoUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.kordamp.ikonli.codicons.Codicons;
-import org.kordamp.ikonli.swing.FontIcon;
 import raven.toast.Notifications;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -49,6 +49,7 @@ public class ScriptRunnerForm {
     private JTextArea resultArea;
     private JTable historyTable;
     private JTable btnTable;
+    private JTable cronTable;
     private JPanel funcRunPanel;
     private JSplitPane contentSplitPane;
     private JPanel menuPanel;
@@ -70,43 +71,30 @@ public class ScriptRunnerForm {
 
         this.funcTabPanel = funcTabPanel;
         remarkTextArea.setText(funcTabPanel.getRemark());
-        textTextViewer = new JsonRSyntaxTextViewer();
-        textTextViewerScrollPane = new JsonRTextScrollPane(textTextViewer);
-        textTextViewer.setRequestFocusEnabled(true);
-        textTextViewer.requestFocusInWindow();
-        textTextViewer.setText(funcTabPanel.getDefine().getFuncIn());
+
+        // 根据类型初始化不同的输入界面
+        initializeInputPanel();
+
+        // 设置焦点
+        if (textTextViewer != null) {
+            textTextViewer.setRequestFocusEnabled(true);
+            textTextViewer.requestFocusInWindow();
+        }
 
 
-        // addButton.setIcon(FontIcon.of(Codicons.ADD, 18));
-        addButton.setText("添加按钮");
-        // addButton.setToolTipText("添加按钮");
-        addButton.addActionListener(e -> {
-            GutoolFuncTabPanelDefineButton addBtn = new GutoolFuncTabPanelDefineButton();
-            addBtn.setOrder(funcTabPanel.getButtons().size());
-            FuncTabPanelBtnDialog dialog = new FuncTabPanelBtnDialog(addBtn,
-                    defineButton -> {
-                        funcTabPanel.addButton(defineButton);
-                        Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
-                        this.reloadMenuPanel();
-                        this.reloadBtnListTable();
-                    }
-            );
-            dialog.pack();
-            dialog.setVisible(true);
-        });
+        // 根据类型设置添加按钮功能
+        setupAddButtonAction();
 
         // editButton.setIcon(FontIcon.of(Codicons.EDIT, 18));
         editButton.setText("编辑面板");
         // editButton.setToolTipText("编辑面板信息");
         editButton.addActionListener(e -> {
             final String oldName = funcTabPanel.getName();
-            FunTabPanelDialog dialog = new FunTabPanelDialog(funcTabPanel, update -> {
-                int tabIndex = funcTabbedPane.indexOfTab(oldName);
-                if (tabIndex != -1) {
-                    funcTabbedPane.setTitleAt(tabIndex, funcTabPanel.getName());
-                }
+            FuncTabPanelDialog dialog = new FuncTabPanelDialog(funcTabPanel, update -> {
                 remarkTextArea.setText(funcTabPanel.getRemark());
                 this.reloadInputPanel();
+                this.reloadMenuPanel();
+                this.updateTabbedPane();
             }, update -> {
 
             });
@@ -114,29 +102,34 @@ public class ScriptRunnerForm {
             dialog.setVisible(true);
         });
 
-        reloadMenuPanel();
+        initMenuPanel();
+        updateTabbedPane();
         contentSplitPane.setDividerLocation((int) (GutoolApp.mainFrame.getWidth() / 1.5));
 
-        textTextViewer.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                saveFuncIn();
-            }
+        // 只有非定时任务类型才添加文档监听器
+        if (textTextViewer != null && textTextViewer.getDocument() != null) {
+            textTextViewer.getDocument().addDocumentListener(new DocumentListener() {
+                @Override
+                public void insertUpdate(DocumentEvent e) {
+                    saveFuncIn();
+                }
 
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                saveFuncIn();
-            }
+                @Override
+                public void removeUpdate(DocumentEvent e) {
+                    saveFuncIn();
+                }
 
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-            }
+                @Override
+                public void changedUpdate(DocumentEvent e) {
+                }
 
-            private void saveFuncIn() {
-                funcTabPanel.setFuncIn(textTextViewer.getText());
-            }
-        });
-
+                private void saveFuncIn() {
+                    if (textTextViewer != null) {
+                        funcTabPanel.setFuncIn(textTextViewer.getText());
+                    }
+                }
+            });
+        }
         this.reloadInputPanel();
         this.initHistoryTable(funcTabPanel);
         this.initBtnTable();
@@ -145,26 +138,38 @@ public class ScriptRunnerForm {
 
     private void reloadInputPanel() {
         inputPanel.removeAll();
-        if (funcTabPanel.isOutTextEnabled()) {
-            if (Objects.isNull(resultTextViewer)) {
-                resultTextViewer = new JsonRSyntaxTextViewer();
-            }
-            if (Objects.isNull(resultTextViewerScrollPane)) {
-                resultTextViewerScrollPane = new JsonRTextScrollPane(resultTextViewer);
-            }
-            JSplitPane resultSplitPane = new JSplitPane(
-                    JSplitPane.VERTICAL_SPLIT,
-                    textTextViewerScrollPane,
-                    resultTextViewerScrollPane
-            );
-            inputPanel.add(resultSplitPane, BorderLayout.CENTER);
-            resultSplitPane.setDividerLocation((int) (GutoolApp.mainFrame.getHeight() / 2.5));
+        String type = funcTabPanel.getDefine().getType();
+
+        if ("cron".equals(type)) {
+            // 定时任务类型 - 显示任务列表
+            inputPanel.add(this.initCronTable(), BorderLayout.CENTER);
         } else {
-            inputPanel.add(textTextViewerScrollPane, BorderLayout.CENTER);
+            // 默认/按钮/HTTP类型 - 显示文本输入区域
+            if (textTextViewerScrollPane != null) {
+                if (funcTabPanel.isOutTextEnabled()) {
+                    if (Objects.isNull(resultTextViewer)) {
+                        resultTextViewer = new JsonRSyntaxTextViewer();
+                    }
+                    if (Objects.isNull(resultTextViewerScrollPane)) {
+                        resultTextViewerScrollPane = new JsonRTextScrollPane(resultTextViewer);
+                    }
+                    JSplitPane resultSplitPane = new JSplitPane(
+                            JSplitPane.VERTICAL_SPLIT,
+                            textTextViewerScrollPane,
+                            resultTextViewerScrollPane
+                    );
+                    inputPanel.add(resultSplitPane, BorderLayout.CENTER);
+                    resultSplitPane.setDividerLocation((int) (GutoolApp.mainFrame.getHeight() / 2.5));
+                } else {
+                    inputPanel.add(textTextViewerScrollPane, BorderLayout.CENTER);
+                }
+            }
         }
+
         inputPanel.revalidate();
         inputPanel.repaint();
     }
+
 
     private void initHistoryTable(GutoolFuncTabPanel funcTabPanel) {
         String[] historyHeaderNames = {"id", "运行脚本", "运行参数", "返回结果", "cost", "status", "启动时间"};
@@ -324,75 +329,190 @@ public class ScriptRunnerForm {
         }
     }
 
+    private void initMenuPanel() {
+        String type = funcTabPanel.getDefine().getType();
+        if ("cron".equals(type)) {
+            menuPanel.removeAll();
+            setupCronMenuPanel();
+            menuPanel.revalidate();
+            menuPanel.repaint();
+        } else {
+            reloadMenuPanel();
+        }
+    }
+
+
     private void reloadMenuPanel() {
-        menuPanel.removeAll();
+        String type = funcTabPanel.getDefine().getType();
+        if ("default".equals(type)) {
+            menuPanel.removeAll();
+            setupButtonMenuPanel();
+            menuPanel.revalidate();
+            menuPanel.repaint();
+        }
+    }
+
+    /**
+     * 设置按钮类型的菜单面板
+     */
+    private void setupButtonMenuPanel() {
         List<GutoolFuncTabPanelDefineButton> defineButtons = funcTabPanel.getButtons();
         defineButtons.sort(Comparator.comparingInt(GutoolFuncTabPanelDefineButton::getOrder));
         int size = defineButtons.size();
         menuPanel.setLayout(new GridLayoutManager(1, size + 3, new Insets(8, 10, 3, 10), -1, -1));
+
         for (int i = 0; i < defineButtons.size(); i++) {
             GutoolFuncTabPanelDefineButton button = defineButtons.get(i);
             JButton defineButton = new JButton();
             defineButton.setText(button.getText());
             defineButton.setToolTipText(button.getToolTipText());
-            defineButton.addActionListener(e -> {
-                GutoolFunc func = GutoolFuncContainer.getFuncById(button.getActionTriggerFuncId());
-                if (Objects.isNull(func)) {
-                    Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "脚本未找到");
-                    return;
+            defineButton.addActionListener(e -> executeButtonScript(button));
+
+            setupButtonPopupMenu(defineButton, button);
+
+            menuPanel.add(defineButton, new GridConstraints(0, i, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        }
+        menuPanel.add(addButton, new GridConstraints(0, size + 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        menuPanel.add(editButton, new GridConstraints(0, size + 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        menuPanel.add(buttonSpacer, new GridConstraints(0, size, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+    }
+
+    /**
+     * 设置定时任务类型的菜单面板
+     */
+    private void setupCronMenuPanel() {
+        menuPanel.setLayout(new GridLayoutManager(1, 3, new Insets(8, 10, 3, 10), -1, -1));
+        menuPanel.add(buttonSpacer, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        menuPanel.add(addButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        menuPanel.add(editButton, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+    }
+
+    /**
+     * 执行按钮脚本
+     */
+    private void executeButtonScript(GutoolFuncTabPanelDefineButton button) {
+        GutoolFunc func = GutoolFuncContainer.getFuncById(button.getActionTriggerFuncId());
+        if (Objects.isNull(func)) {
+            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "脚本未找到");
+            return;
+        }
+        if (StrUtil.isBlankOrUndefined(func.getContent())) {
+            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "脚本内容为空");
+            return;
+        }
+
+        // 运行时每次清空
+        resultArea.setText("");
+
+        // run func
+        func.initRunner(funcTabPanel,
+                textTextViewer.getText(),
+                (msg) -> resultArea.append(msg),
+                () -> {
+                    // javaConsoleForm.reloadHistoryListTable((Integer) idObj);
+                }).asyncRun(result -> {
+            if (ObjectUtil.isEmpty(result)) {
+                Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "返回内容为空!");
+                return;
+            }
+            String resultText = "";
+            try {
+                if (result instanceof CharSequence) {
+                    resultText = result.toString();
+                } else {
+                    resultText = JSONUtil.toJsonPrettyStr(result);
                 }
-                if (StrUtil.isBlankOrUndefined(func.getContent())) {
-                    Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "脚本内容为空");
-                    return;
+            } catch (Exception ex) {
+                resultText = ExceptionUtil.stacktraceToString(ex, 500);
+            }
+
+            if ("输出结果".equals(button.getFunOutMode())) {
+                if (funcTabPanel.isOutTextEnabled()) {
+                    resultTextViewer.setText(resultText);
+                } else {
+                    resultArea.append("result:\n");
+                    resultArea.append(resultText);
+                    resultArea.append("\n");
                 }
+            } else {
+                textTextViewer.setText(resultText);
+            }
+            func.resetRunner();
+            this.reloadHistoryListTable(funcTabPanel.getId());
+        });
+    }
 
-                // 运行时每次清空
-                resultArea.setText("");
-
-                // run func
-                func.initRunner(funcTabPanel,
-                        textTextViewer.getText(),
-                        (msg) -> resultArea.append(msg),
-                        () -> {
-                            // javaConsoleForm.reloadHistoryListTable((Integer) idObj);
-                        }).asyncRun(result -> {
-                    if (ObjectUtil.isEmpty(result)) {
-                        Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "返回内容为空!");
-                        return;
+    /**
+     * 设置按钮的右键菜单
+     */
+    private void setupButtonPopupMenu(JButton defineButton, GutoolFuncTabPanelDefineButton button) {
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem editItem = new JMenuItem("编辑");
+        editItem.addActionListener(e -> {
+            FuncTabPanelBtnDialog dialog = new FuncTabPanelBtnDialog(button,
+                    editButton -> {
+                        funcTabPanel.sortButtons();
+                        Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
+                        this.reloadMenuPanel();
+                        this.reloadBtnListTable();
                     }
-                    String resultText = "";
-                    try {
-                        if (result instanceof CharSequence) {
-                            resultText = result.toString();
-                        } else {
-                            resultText = JSONUtil.toJsonPrettyStr(result);
+            );
+            dialog.pack();
+            dialog.setVisible(true);
+        });
+        popupMenu.add(editItem);
+
+        // 给按钮添加鼠标监听器以处理右键
+        defineButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                showPopup(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                showPopup(e);
+            }
+
+            private void showPopup(MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    popupMenu.show(e.getComponent(), e.getX(), e.getY());
+                }
+            }
+        });
+    }
+
+    /**
+     * 根据类型设置添加按钮功能
+     */
+    private void setupAddButtonAction() {
+        String type = funcTabPanel.getDefine().getType();
+        if ("cron".equals(type)) {
+            // 定时任务类型 - 添加按钮用于添加定时任务
+            addButton.setText("添加任务");
+            addButton.setToolTipText("添加定时任务");
+            addButton.addActionListener(e -> {
+                FuncTablePanelCronDialog dialog = new FuncTablePanelCronDialog(
+                        new GutoolFuncTabPanelDefineCron(),
+                        cron -> {
+                            funcTabPanel.addCrontab(cron);
+                            Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
+                            this.reloadCronTable();
                         }
-                    } catch (Exception ex) {
-                        resultText = ExceptionUtil.stacktraceToString(ex, 500);
-                    }
-
-                    if ("输出结果".equals(button.getFunOutMode())) {
-                        if (funcTabPanel.isOutTextEnabled()) {
-                            resultTextViewer.setText(resultText);
-                        } else {
-                            resultArea.append("result:\n");
-                            resultArea.append(resultText);
-                            resultArea.append("\n");
-                        }
-                    } else {
-                        textTextViewer.setText(resultText);
-                    }
-                    func.resetRunner();
-                    this.reloadHistoryListTable(funcTabPanel.getId());
-                });
+                );
+                dialog.pack();
+                dialog.setVisible(true);
             });
-
-            JPopupMenu popupMenu = new JPopupMenu();
-            JMenuItem editItem = new JMenuItem("编辑");
-            editItem.addActionListener(e -> {
-                FuncTabPanelBtnDialog dialog = new FuncTabPanelBtnDialog(button,
-                        editButton -> {
-                            funcTabPanel.sortButtons();
+        } else {
+            // 默认/按钮/HTTP类型 - 添加按钮用于添加功能按钮
+            addButton.setText("添加按钮");
+            addButton.setToolTipText("添加功能按钮");
+            addButton.addActionListener(e -> {
+                GutoolFuncTabPanelDefineButton addBtn = new GutoolFuncTabPanelDefineButton();
+                addBtn.setOrder(funcTabPanel.getButtons().size());
+                FuncTabPanelBtnDialog dialog = new FuncTabPanelBtnDialog(addBtn,
+                        defineButton -> {
+                            funcTabPanel.addButton(defineButton);
                             Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
                             this.reloadMenuPanel();
                             this.reloadBtnListTable();
@@ -401,36 +521,201 @@ public class ScriptRunnerForm {
                 dialog.pack();
                 dialog.setVisible(true);
             });
-            popupMenu.add(editItem);
-            // 给按钮添加鼠标监听器以处理右键
-            defineButton.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    showPopup(e);
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-                    showPopup(e);
-                }
-
-                private void showPopup(MouseEvent e) {
-                    if (e.isPopupTrigger()) {
-                        popupMenu.show(e.getComponent(), e.getX(), e.getY());
-                    }
-                }
-            });
-            menuPanel.add(defineButton, new GridConstraints(0, i, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         }
-        menuPanel.add(addButton, new GridConstraints(0, size + 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        menuPanel.add(editButton, new GridConstraints(0, size + 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        menuPanel.add(buttonSpacer, new GridConstraints(0, size, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+    }
 
-        menuPanel.revalidate();
-        menuPanel.repaint();
+    /**
+     * 根据类型初始化输入面板
+     */
+    private void initializeInputPanel() {
+        String type = funcTabPanel.getDefine().getType();
+
+        if ("cron".equals(type)) {
+            // 定时任务类型，不显示文本输入区域
+            textTextViewer = null;
+            textTextViewerScrollPane = null;
+        } else {
+            // 默认/按钮/HTTP类型，显示文本输入区域
+            textTextViewer = new JsonRSyntaxTextViewer();
+            textTextViewerScrollPane = new JsonRTextScrollPane(textTextViewer);
+            textTextViewer.setText(funcTabPanel.getDefine().getFuncIn());
+        }
+    }
+
+    /**
+     * 初始化定时任务表格
+     */
+    private JScrollPane initCronTable() {
+        final JScrollPane scrollPane1 = new JScrollPane();
+        cronTable = new JTable();
+        scrollPane1.setViewportView(cronTable);
+        String[] cronTableHeaderNames = {"Cron表达式", "描述", "绑定脚本", "启用状态", "下次执行", "排序"};
+        Object[][] cronTableEmptyData = new Object[0][cronTableHeaderNames.length];
+        DefaultTableModel cronTableModel = new DefaultTableModel(cronTableEmptyData, cronTableHeaderNames) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // 所有单元格都不可编辑
+            }
+        };
+        cronTable.setModel(cronTableModel);
+
+        // 设置表头属性
+        cronTable.getTableHeader().setReorderingAllowed(false);
+        cronTable.setAutoCreateRowSorter(true);
+        cronTable.setRowHeight(25);
+        cronTable.setPreferredScrollableViewportSize(new Dimension(500, 200));
+
+        // 设置列宽
+        TableColumn cronColumn = cronTable.getColumnModel().getColumn(0);
+        cronColumn.setPreferredWidth(120);
+
+        TableColumn descColumn = cronTable.getColumnModel().getColumn(1);
+        descColumn.setPreferredWidth(150);
+
+        TableColumn scriptColumn = cronTable.getColumnModel().getColumn(2);
+        scriptColumn.setPreferredWidth(150);
+
+        TableColumn enabledColumn = cronTable.getColumnModel().getColumn(3);
+        enabledColumn.setPreferredWidth(80);
+        enabledColumn.setMaxWidth(80);
+        enabledColumn.setMinWidth(80);
+
+        TableColumn nextColumn = cronTable.getColumnModel().getColumn(4);
+        nextColumn.setPreferredWidth(150);
+
+        TableColumn orderColumn = cronTable.getColumnModel().getColumn(5);
+        orderColumn.setPreferredWidth(60);
+        orderColumn.setMaxWidth(60);
+        orderColumn.setMinWidth(60);
+
+        // 添加右键菜单
+        JPopupMenu cronTablePopupMenu = new JPopupMenu();
+        JMenuItem editMenuItem = new JMenuItem("编辑");
+        JMenuItem deleteMenuItem = new JMenuItem("删除");
+        JMenuItem reloadMenuItem = new JMenuItem("刷新");
+
+        cronTablePopupMenu.add(editMenuItem);
+        cronTablePopupMenu.add(deleteMenuItem);
+        cronTablePopupMenu.addSeparator();
+        cronTablePopupMenu.add(reloadMenuItem);
+
+        // 添加鼠标监听器
+        cronTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                showPopup(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                showPopup(e);
+            }
+
+            private void showPopup(MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    int row = cronTable.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        cronTable.setRowSelectionInterval(row, row);
+                        // 根据是否有选中项来启用/禁用编辑和删除菜单
+                        boolean hasSelection = row >= 0 && row < cronTable.getRowCount();
+                        editMenuItem.setEnabled(hasSelection);
+                        deleteMenuItem.setEnabled(hasSelection);
+                    }
+                    cronTablePopupMenu.show(e.getComponent(), e.getX(), e.getY());
+                }
+            }
+        });
+
+        editMenuItem.addActionListener(e -> {
+            int selectedRow = cronTable.getSelectedRow();
+            if (selectedRow != -1 && selectedRow < funcTabPanel.getCrontab().size()) {
+                // 根据行号直接获取对应的定时任务对象
+                FuncTablePanelCronDialog dialog = new FuncTablePanelCronDialog(
+                        funcTabPanel.getCrontab().get(selectedRow),
+                        cron -> {
+                            funcTabPanel.sortCrontab();
+                            Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
+                            this.reloadCronTable();
+                        }
+                );
+                dialog.pack();
+                dialog.setVisible(true);
+            }
+        });
+
+        deleteMenuItem.addActionListener(e -> {
+            int selectedRow = cronTable.getSelectedRow();
+            if (selectedRow != -1 && selectedRow < funcTabPanel.getCrontab().size()) {
+                int confirm = JOptionPane.showConfirmDialog(
+                        cronTable,
+                        "确定要删除这个定时任务吗？",
+                        "确认删除",
+                        JOptionPane.YES_NO_OPTION
+                );
+                if (confirm == JOptionPane.YES_OPTION) {
+                    // 根据行号直接删除对应的定时任务对象
+                    funcTabPanel.removeCron(funcTabPanel.getCrontab().get(selectedRow));
+                    Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "删除成功");
+                    reloadCronTable();
+                }
+            }
+        });
+
+        reloadMenuItem.addActionListener(e -> reloadCronTable());
+
+        // 初始加载数据
+        reloadCronTable();
+
+        return scrollPane1;
+    }
+
+    /**
+     * 根据类型更新标签页显示
+     */
+    private void updateTabbedPane() {
+        String type = funcTabPanel.getDefine().getType();
+
+        // 查找"按钮列表"标签页的索引
+        int buttonListTabIndex = -1;
+        for (int i = 0; i < tabbedPane1.getTabCount(); i++) {
+            if ("按钮列表".equals(tabbedPane1.getTitleAt(i))) {
+                buttonListTabIndex = i;
+                break;
+            }
+        }
+        if ("cron".equals(type) && buttonListTabIndex != -1) {
+            tabbedPane1.removeTabAt(buttonListTabIndex);
+        }
+    }
+
+    /**
+     * 重新加载定时任务表格数据
+     */
+    public void reloadCronTable() {
+        DefaultTableModel model = (DefaultTableModel) cronTable.getModel();
+        model.setRowCount(0);
+
+        List<Object[]> funcDataObjectList = GutoolPoQueryRepository.selectFuncAllDataObjectList();
+
+        for (GutoolFuncTabPanelDefineCron cron : funcTabPanel.getCrontab()) {
+            Object[] data = new Object[6];
+            data[0] = cron.getCronExpression();
+            data[1] = cron.getDescription();
+            data[2] = funcDataObjectList.stream()
+                    .filter(funcData -> ((Long) funcData[0]).equals(cron.getCronTriggerFuncId()))
+                    .map(funcData -> ((String) funcData[1]))
+                    .findFirst()
+                    .orElse("未知脚本");
+            data[3] = cron.getEnabled() ? "启用" : "禁用";
+            data[4] = cron.getNextExecutionTime() != null ?
+                    cron.getNextExecutionTime().toString() : "未计算";
+            data[5] = cron.getOrder();
+            model.addRow(data);
+        }
     }
 
     {
+
 // GUI initializer generated by IntelliJ IDEA GUI Designer
 // >>> IMPORTANT!! <<<
 // DO NOT EDIT OR ADD ANY CODE HERE!
@@ -495,6 +780,115 @@ public class ScriptRunnerForm {
      */
     public JComponent $$$getRootComponent$$$() {
         return funcRunPanel;
+    }
+
+    /**
+     * Cron 任务操作按钮渲染器
+     */
+    private class CronTaskButtonRenderer extends JButton implements TableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus, int row, int column) {
+            GutoolFuncTabPanelDefineCron cron = (GutoolFuncTabPanelDefineCron) value;
+            setText("操作");
+            setToolTipText("编辑或删除此任务");
+
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+                setForeground(table.getSelectionForeground());
+            } else {
+                setBackground(table.getBackground());
+                setForeground(table.getForeground());
+            }
+
+            return this;
+        }
+    }
+
+    /**
+     * Cron 任务操作按钮编辑器
+     */
+    private class CronTaskButtonEditor extends DefaultCellEditor {
+        private JPanel buttonPanel;
+        private JButton editButton;
+        private JButton deleteButton;
+        private GutoolFuncTabPanelDefineCron currentCron;
+
+        public CronTaskButtonEditor(DefaultTableModel model) {
+            super(new JCheckBox());
+
+            buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+            editButton = new JButton("编辑");
+            deleteButton = new JButton("删除");
+
+            // 设置按钮样式
+            editButton.setPreferredSize(new Dimension(60, 25));
+            deleteButton.setPreferredSize(new Dimension(60, 25));
+
+            editButton.addActionListener(e -> {
+                if (currentCron != null) {
+                    editCronTask(currentCron);
+                }
+                fireEditingStopped();
+            });
+
+            deleteButton.addActionListener(e -> {
+                if (currentCron != null) {
+                    deleteCronTask(currentCron);
+                }
+                fireEditingStopped();
+            });
+
+            buttonPanel.add(editButton);
+            buttonPanel.add(deleteButton);
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                                                     boolean isSelected, int row, int column) {
+            currentCron = (GutoolFuncTabPanelDefineCron) value;
+            return buttonPanel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return currentCron;
+        }
+    }
+
+    /**
+     * 编辑 cron 任务
+     */
+    private void editCronTask(GutoolFuncTabPanelDefineCron cron) {
+        FuncTablePanelCronDialog dialog = new FuncTablePanelCronDialog(
+                cron,
+                updatedCron -> {
+                    funcTabPanel.sortCrontab();
+                    Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
+                    reloadInputPanel(); // 重新加载任务列表
+                    reloadCronTable(); // 同时更新右侧表格
+                }
+        );
+        dialog.pack();
+        dialog.setVisible(true);
+    }
+
+    /**
+     * 删除 cron 任务
+     */
+    private void deleteCronTask(GutoolFuncTabPanelDefineCron cron) {
+        int confirm = JOptionPane.showConfirmDialog(
+                this.funcRunPanel,
+                "确定要删除这个定时任务吗？",
+                "确认删除",
+                JOptionPane.YES_NO_OPTION
+        );
+        if (confirm == JOptionPane.YES_OPTION) {
+            funcTabPanel.removeCron(cron);
+            Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "删除成功");
+            reloadInputPanel(); // 重新加载任务列表
+            reloadCronTable(); // 同时更新右侧表格
+        }
     }
 
 }

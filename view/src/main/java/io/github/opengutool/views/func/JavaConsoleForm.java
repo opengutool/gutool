@@ -22,7 +22,7 @@ import io.github.opengutool.repository.GutoolPoRepository;
 import io.github.opengutool.views.component.textviewer.JavaRSyntaxTextViewer;
 import io.github.opengutool.views.component.textviewer.JavaRTextScrollPane;
 import io.github.opengutool.views.form.MainWindow;
-import io.github.opengutool.views.script.FunTabPanelDialog;
+import io.github.opengutool.views.script.FuncTabPanelDialog;
 import io.github.opengutool.views.script.ScriptRunDialog;
 import io.github.opengutool.views.script.ScriptRunnerForm;
 import io.github.opengutool.views.util.JTableUtil;
@@ -344,7 +344,7 @@ public class JavaConsoleForm {
             }
             // new tab
             try {
-                FunTabPanelDialog dialog = new FunTabPanelDialog(null, funcTabPanel -> {
+                FuncTabPanelDialog dialog = new FuncTabPanelDialog(null, funcTabPanel -> {
                     ScriptRunnerForm funcRunForm = new ScriptRunnerForm(funcTabPanel, funcTabbedPane);
                     funcTabbedPane.addTab(funcTabPanel.getName(), funcRunForm.getFuncRunPanel());
                     // 自动选中新加的 tab

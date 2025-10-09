@@ -15,6 +15,7 @@
  */
 package io.github.opengutool.domain.func;
 
+import io.github.opengutool.domain.script.GutoolScriptEvent;
 import lombok.Data;
 
 import java.util.Date;
@@ -47,6 +48,8 @@ public class GutoolFuncRunHistory {
 
     private Date modifiedTime;
 
+    private GutoolScriptEvent event;
+
     public GutoolFuncRunHistory(GutoolFunc func, GutoolFuncTabPanel funcTabPanel, String funcIn) {
         this.setFuncId(func.getId());
         if (Objects.nonNull(funcTabPanel)) {
@@ -60,6 +63,17 @@ public class GutoolFuncRunHistory {
         // 记录时间
         this.setCreateTime(new Date());
         this.setModifiedTime(this.getCreateTime());
+
+        event = new GutoolScriptEvent();
+        event.setType(funcTabPanel.getDefine().getType());
+        event.setTimestamp(this.getCreateTime().getTime());
+        event.setFuncId(this.getFuncId());
+        event.setTabPanelId(this.getTabPanelId());
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+        event.setHistoryId(id);
     }
 
     /**

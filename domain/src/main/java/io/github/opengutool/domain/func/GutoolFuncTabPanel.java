@@ -82,4 +82,57 @@ public class GutoolFuncTabPanel implements Serializable {
         this.setRemark(remark);
         return true;
     }
+
+    // ===== Cron 任务管理方法 =====
+
+    /**
+     * 添加 cron 任务
+     *
+     * @param cron cron 任务
+     * @return 是否添加成功
+     */
+    public boolean addCrontab(GutoolFuncTabPanelDefineCron cron) {
+        if (Objects.isNull(this.getDefine())) {
+            this.setDefine(new GutoolFuncTabPanelDefine());
+        }
+        this.getDefine().getCrontab().add(cron);
+        this.getDefine().getCrontab().sort(Comparator.comparingInt(GutoolFuncTabPanelDefineCron::getOrder));
+        return true;
+    }
+
+    /**
+     * 移除 cron 任务
+     *
+     * @param cron 要移除的 cron 任务
+     * @return 是否移除成功
+     */
+    public boolean removeCron(GutoolFuncTabPanelDefineCron cron) {
+        if (Objects.nonNull(this.getDefine()) && Objects.nonNull(this.getDefine().getCrontab())) {
+            return this.getDefine().getCrontab().remove(cron);
+        }
+        return false;
+    }
+
+
+    /**
+     * 获取所有 cron 任务
+     *
+     * @return cron 任务列表
+     */
+    public List<GutoolFuncTabPanelDefineCron> getCrontab() {
+        return this.getDefine().getCrontab();
+    }
+
+    /**
+     * 排序 cron 任务
+     *
+     * @return 是否排序成功
+     */
+    public boolean sortCrontab() {
+        if (Objects.nonNull(this.getDefine()) && Objects.nonNull(this.getDefine().getCrontab())) {
+            this.getDefine().getCrontab().sort(Comparator.comparingInt(GutoolFuncTabPanelDefineCron::getOrder));
+            return true;
+        }
+        return false;
+    }
 }

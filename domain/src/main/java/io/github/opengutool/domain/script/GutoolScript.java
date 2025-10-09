@@ -37,7 +37,22 @@ public abstract class GutoolScript extends groovy.lang.Script {
     private static final AtomicInteger counter = new AtomicInteger(0);
     private static String TMP_FILE_PATH = System.getProperty("java.io.tmpdir") + File.separator;
 
-    public Object run(String funcName, String[] arguments) throws CompilationFailedException, IOException {
+    public Object run(String funcName, String[] args) throws CompilationFailedException, IOException {
+        Object params = this.getBinding().getProperty("params");
+        if (ObjectUtil.isEmpty(params)) {
+            params = "";
+            this.getBinding().setProperty("params", params);
+        }
+        // 设置 event
+        Object event = this.getBinding().getVariable("event");
+        if (ObjectUtil.isEmpty(params)) {
+            throw new RuntimeException("Gutool script event not found");
+        }
+        if (event instanceof GutoolScriptEvent) {
+            ((GutoolScriptEvent) event).setParams(params);
+        }
+
+
         String funcContent = GutoolFuncContainer.getFuncContentByName(funcName);
         if (StrUtil.isBlankOrUndefined(funcContent)) {
             return null;
@@ -48,11 +63,30 @@ public abstract class GutoolScript extends groovy.lang.Script {
         CompilerConfiguration config = new CompilerConfiguration();
         config.setScriptBaseClass(GutoolScript.class.getName());
         GroovyShell shell = new GroovyShell(this.getClass().getClassLoader(), this.getBinding(), config);
-        return shell.run(file, arguments);
+        return shell.run(file, args);
     }
 
     public Object run(String funcName, Object params) throws CompilationFailedException, IOException {
         this.getBinding().setProperty("params", ObjectUtil.isEmpty(params) ? "" : params);
         return this.run(funcName, new String[]{});
+    }
+
+    @Override
+    public Object invokeMethod(String name, Object args) {
+        try {
+            // 首先尝试调用父类方法
+            return super.invokeMethod(name, args);
+        } catch (Exception e) {
+            // 如果方法不存在，尝试作为脚本名称执行
+            String funcContent = GutoolFuncContainer.getFuncContentByName(name);
+            if (StrUtil.isBlankOrUndefined(funcContent)) {
+                throw new RuntimeException("Method '" + name + "' not found and script '" + name + "' not found");
+            }
+            try {
+                return run(name, args);
+            } catch (CompilationFailedException | IOException ex) {
+                throw new RuntimeException("Failed to execute script '" + name + "':", ex);
+            }
+        }
     }
 }

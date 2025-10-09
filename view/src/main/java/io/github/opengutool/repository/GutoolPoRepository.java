@@ -128,6 +128,16 @@ public class GutoolPoRepository {
                 GutoolDDDMethodAroundType.AFTER,
                 (event) -> insertOrUpdateFuncTabPanel(event.getSource()),
                 GutoolFuncTabPanel::setAll);
+        GutoolDDDFactory.listen(
+                GutoolFuncTabPanel.class,
+                GutoolDDDMethodAroundType.AFTER,
+                (event) -> insertOrUpdateFuncTabPanel(event.getSource()),
+                GutoolFuncTabPanel::addCrontab, GutoolFuncTabPanel::removeCron);
+        GutoolDDDFactory.listen(
+                GutoolFuncTabPanel.class,
+                GutoolDDDMethodAroundType.AFTER,
+                (event) -> insertOrUpdateFuncTabPanel(event.getSource()),
+                GutoolFuncTabPanel::sortCrontab);
     }
 
     // funcTabPanel

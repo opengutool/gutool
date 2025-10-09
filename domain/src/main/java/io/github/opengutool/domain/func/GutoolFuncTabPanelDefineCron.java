@@ -18,27 +18,49 @@ package io.github.opengutool.domain.func;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 
 /**
+ * 定时任务配置
  * @author <a href="https://github.com/opengutool">gutool</a>
- * @since 2025/9/3
+ * @since 2025/9/30
  */
 @Data
-public class GutoolFuncTabPanelDefine implements Serializable {
+public class GutoolFuncTabPanelDefineCron implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * default("button"), "cron", "http"
+     * Cron表达式
      */
-    private String type = "default";
-    private String funcIn = "";
-    private List<GutoolFuncTabPanelDefineButton> buttons = new ArrayList<>();
-    private boolean outTextEnabled = false;
+    private String cronExpression;
 
     /**
-     * 定时任务配置列表
+     * 描述
      */
-    private List<GutoolFuncTabPanelDefineCron> crontab = new ArrayList<>();
+    private String description;
+
+    /**
+     * 绑定的脚本ID
+     */
+    private Long cronTriggerFuncId;
+
+    /**
+     * 是否启用
+     */
+    private Boolean enabled = true;
+
+    /**
+     * 下次执行时间
+     */
+    private Date nextExecutionTime;
+
+    /**
+     * 上次执行时间
+     */
+    private Date lastExecutionTime;
+
+    /**
+     * 排序
+     */
+    private Integer order = 0;
 }

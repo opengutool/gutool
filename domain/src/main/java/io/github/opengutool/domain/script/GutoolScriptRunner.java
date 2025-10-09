@@ -75,14 +75,22 @@ public class GutoolScriptRunner {
             FileUtil.writeString(funcRunHistory.getFuncMirror(), file, Charset.defaultCharset());
             Binding binding = new Binding();
             binding.setProperty("args", new String[0]);
+            Object params;
             // 如果是 json 自动成对象
             if (JSONUtil.isTypeJSONObject(funcRunHistory.getFuncIn())) {
-                binding.setProperty("params", JSONUtil.parseObj(funcRunHistory.getFuncIn()));
+                params = JSONUtil.parseObj(funcRunHistory.getFuncIn());
             } else if (JSONUtil.isTypeJSONArray(funcRunHistory.getFuncIn())) {
-                binding.setProperty("params", JSONUtil.parseArray(funcRunHistory.getFuncIn()));
+                params = JSONUtil.parseArray(funcRunHistory.getFuncIn());
             } else {
-                binding.setProperty("params", funcRunHistory.getFuncIn());
+                params = funcRunHistory.getFuncIn();
             }
+            GutoolScriptEvent event = funcRunHistory.getEvent();
+            event.setParams(params);
+
+            binding.setProperty("params", params);
+            // 新增 event 对象（主要包含类型和 xxx id）
+            binding.setProperty("event", event);
+
             CompilerConfiguration config = new CompilerConfiguration();
             config.setScriptBaseClass(GutoolScript.class.getName());
             shell = new GroovyShell(binding, config);
