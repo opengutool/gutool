@@ -73,11 +73,12 @@ public class GutoolFuncTabPanel implements Serializable {
         return true;
     }
 
-    public boolean setAll(String name, String remark, boolean outTextEnabled) {
+    public boolean setAll(String name, String remark, boolean outTextEnabled, String type) {
         if (Objects.isNull(this.getDefine())) {
             this.setDefine(new GutoolFuncTabPanelDefine());
         }
         this.getDefine().setOutTextEnabled(outTextEnabled);
+        this.getDefine().setType(type);
         this.setName(name);
         this.setRemark(remark);
         return true;

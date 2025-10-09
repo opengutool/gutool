@@ -1,7 +1,9 @@
 package io.github.opengutool.views.script;
 
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.util.StrUtil;
 import com.cronutils.model.Cron;
+import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinition;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
@@ -167,14 +169,7 @@ public class FuncTablePanelCronDialog extends JDialog {
         }
 
         try {
-            CronDefinition cronDefinition = CronDefinitionBuilder.defineCron()
-                    .withSeconds().and()
-                    .withMinutes().and()
-                    .withHours().and()
-                    .withDayOfMonth().and()
-                    .withMonth().and()
-                    .withDayOfWeek().withValidRange(1, 7).and()
-                    .instance();
+            CronDefinition cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ);
 
             CronParser parser = new CronParser(cronDefinition);
             Cron cron = parser.parse(expression);
@@ -199,14 +194,7 @@ public class FuncTablePanelCronDialog extends JDialog {
         }
 
         try {
-            CronDefinition cronDefinition = CronDefinitionBuilder.defineCron()
-                    .withSeconds().and()
-                    .withMinutes().and()
-                    .withHours().and()
-                    .withDayOfMonth().and()
-                    .withMonth().and()
-                    .withDayOfWeek().withValidRange(1, 7).and()
-                    .instance();
+            CronDefinition cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ);
 
             CronParser parser = new CronParser(cronDefinition);
             Cron cron = parser.parse(expression);
@@ -216,8 +204,8 @@ public class FuncTablePanelCronDialog extends JDialog {
             ZonedDateTime now = ZonedDateTime.now();
             Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(now);
 
-            nextExecutionValueLabel.setText(nextExecution.isPresent() ?
-                    nextExecution.get().toLocalDateTime().toString() : "无下次执行时间");
+            nextExecutionValueLabel.setText(nextExecution.map(zonedDateTime ->
+                    LocalDateTimeUtil.format(zonedDateTime.toLocalDateTime(), "yyyy-MM-dd HH:mm:ss")).orElse("无下次执行时间"));
         } catch (Exception e) {
             nextExecutionValueLabel.setText("表达式无效");
         }
@@ -264,7 +252,8 @@ public class FuncTablePanelCronDialog extends JDialog {
     }
 
     private void showCronExampleDialog() {
-        JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
+        JDialog exampleDialog = new JDialog(this, "Cron表达式示例", true);
+        JPanel panel = new JPanel(new GridLayoutManager(7, 2, new Insets(10, 10, 10, 10), 5, 5));
 
         String[][] examples = {
                 {"每5秒", "*/5 * * * * ?"},
@@ -276,23 +265,43 @@ public class FuncTablePanelCronDialog extends JDialog {
                 {"工作日9点", "0 0 9 ? * MON-FRI"}
         };
 
-        for (String[] example : examples) {
-            panel.add(new JLabel(example[0] + ":"));
+        for (int i = 0; i < examples.length; i++) {
+            String[] example = examples[i];
+            panel.add(new JLabel(example[0] + ":"), new GridConstraints(i, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
             JButton exampleButton = new JButton(example[1]);
             exampleButton.addActionListener(e -> {
                 cronExpressionField.setText(example[1]);
-                ((JDialog) SwingUtilities.getWindowAncestor(panel)).dispose();
+                exampleDialog.dispose();
                 updateNextExecutionTime();
             });
-            panel.add(exampleButton);
+            panel.add(exampleButton, new GridConstraints(i, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         }
 
-        JOptionPane.showMessageDialog(
-                this,
-                panel,
-                "Cron表达式示例",
-                JOptionPane.PLAIN_MESSAGE
-        );
+        // 添加关闭按钮
+        JPanel buttonPanel = new JPanel(new GridLayoutManager(1, 1, new Insets(10, 10, 10, 10), -1, -1));
+        JButton closeButton = new JButton("关闭");
+        closeButton.addActionListener(e -> exampleDialog.dispose());
+        buttonPanel.add(closeButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+
+        // 设置对话框布局
+        exampleDialog.setLayout(new BorderLayout());
+        exampleDialog.add(panel, BorderLayout.CENTER);
+        exampleDialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        // 设置对话框属性
+        exampleDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        ComponentUtil.setPreferSizeAndLocateToCenter(exampleDialog, 350, 350);
+        exampleDialog.setResizable(false);
+
+        // macOS 全屏内容支持
+        if (SystemUtil.isMacOs() && SystemInfo.isMacFullWindowContentSupported) {
+            exampleDialog.getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
+            exampleDialog.getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
+            exampleDialog.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
+            exampleDialog.getRootPane().putClientProperty("apple.awt.windowTitleVisible", false);
+        }
+
+        exampleDialog.setVisible(true);
     }
 
     private void onCancel() {

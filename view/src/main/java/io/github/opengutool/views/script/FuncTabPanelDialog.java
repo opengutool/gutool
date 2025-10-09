@@ -120,14 +120,49 @@ public class FuncTabPanelDialog extends JDialog {
             public void actionPerformed(ActionEvent e) {
                 String selectedDisplayType = (String) typeComboBox.getSelectedItem();
                 String selectedType = TYPE_DISPLAY_TO_STORAGE.get(selectedDisplayType);
-
-                // 立即更新当前对象的类型
                 if (Objects.nonNull(funcTabPanel) && Objects.nonNull(funcTabPanel.getDefine())) {
                     funcTabPanel.getDefine().setType(selectedType);
-                    System.out.println("类型已更新: " + selectedDisplayType + " -> " + selectedType);
                 }
+
+                // 根据类型控制结果区选项的可见性
+                updateResultAreaVisibility(selectedType);
             }
         });
+
+        // 如果是编辑模式（已存在ID），则禁用类型选择
+        if (Objects.nonNull(funcTabPanel) && Objects.nonNull(funcTabPanel.getId())) {
+            typeComboBox.setEnabled(false);
+        }
+
+        // 初始化时设置结果区选项的可见性
+        if (Objects.nonNull(funcTabPanel) && Objects.nonNull(funcTabPanel.getDefine())) {
+            updateResultAreaVisibility(funcTabPanel.getDefine().getType());
+        }
+    }
+
+    /**
+     * 根据类型控制结果区选项的可见性
+     *
+     * @param type 面板类型
+     */
+    private void updateResultAreaVisibility(String type) {
+        // 定时触发和请求触发类型不需要结果区选项
+        boolean isResultAreaNeeded = "default".equals(type);
+
+        // 找到结果区标签和复选框
+        JLabel resultAreaLabel = null;
+        for (Component component : formPanel.getComponents()) {
+            if (component instanceof JLabel && "结果区".equals(((JLabel) component).getText())) {
+                resultAreaLabel = (JLabel) component;
+                break;
+            }
+        }
+
+        // 设置结果区标签和复选框的可见性
+        if (resultAreaLabel != null) {
+            resultAreaLabel.setVisible(isResultAreaNeeded);
+        }
+        outTextCheckBox.setVisible(isResultAreaNeeded);
     }
 
     private void onOK() {
@@ -141,15 +176,16 @@ public class FuncTabPanelDialog extends JDialog {
         GutoolFuncTabPanel current = funcTabPanel;
         if (Objects.isNull(current) || Objects.isNull(current.getId())) {
             // insert
-            GutoolFuncTabPanel insert = GutoolDDDFactory.create(new GutoolFuncTabPanel());
-            insert.setAll(nameText, remarkText, outTextCheckBox.isSelected());
-            Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
-            // 插入
-            current = insert;
-        } else {
-            current.setAll(nameText, remarkText, outTextCheckBox.isSelected());
-            Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
+            current = GutoolDDDFactory.create(new GutoolFuncTabPanel());
         }
+
+        String selectedDisplayType = (String) typeComboBox.getSelectedItem();
+        String selectedType = TYPE_DISPLAY_TO_STORAGE.get(selectedDisplayType);
+        // 对于非按钮触发类型，结果区选项默认为false
+        boolean outTextValue = outTextCheckBox.isSelected() && "default".equals(selectedType);
+        current.setAll(nameText, remarkText, outTextValue, selectedType);
+        Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
+
         saveConsumer.accept(current);
         dispose();
     }
@@ -228,6 +264,6 @@ public class FuncTabPanelDialog extends JDialog {
         typeComboBox = new JComboBox<>();
         typeComboBox.addItem("按钮触发");
         typeComboBox.addItem("定时触发");
-        typeComboBox.addItem("请求触发");
+        // typeComboBox.addItem("请求触发");
     }
 }
