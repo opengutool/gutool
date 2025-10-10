@@ -14,6 +14,7 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import io.github.opengutool.domain.func.GutoolFuncTabPanelDefineCron;
 import io.github.opengutool.repository.GutoolPoQueryRepository;
+import io.github.opengutool.views.dialog.CronExampleDialog;
 import io.github.opengutool.views.util.ComponentUtil;
 import io.github.opengutool.views.util.SystemUtil;
 import raven.toast.Notifications;
@@ -252,55 +253,10 @@ public class FuncTablePanelCronDialog extends JDialog {
     }
 
     private void showCronExampleDialog() {
-        JDialog exampleDialog = new JDialog(this, "Cron表达式示例", true);
-        JPanel panel = new JPanel(new GridLayoutManager(7, 2, new Insets(10, 10, 10, 10), 5, 5));
-
-        String[][] examples = {
-                {"每5秒", "*/5 * * * * ?"},
-                {"每分钟", "0 * * * * ?"},
-                {"每小时", "0 0 * * * ?"},
-                {"每天8点", "0 0 8 * * ?"},
-                {"每周一8点", "0 0 8 ? * MON"},
-                {"每月1号8点", "0 0 8 1 * ?"},
-                {"工作日9点", "0 0 9 ? * MON-FRI"}
-        };
-
-        for (int i = 0; i < examples.length; i++) {
-            String[] example = examples[i];
-            panel.add(new JLabel(example[0] + ":"), new GridConstraints(i, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-            JButton exampleButton = new JButton(example[1]);
-            exampleButton.addActionListener(e -> {
-                cronExpressionField.setText(example[1]);
-                exampleDialog.dispose();
-                updateNextExecutionTime();
-            });
-            panel.add(exampleButton, new GridConstraints(i, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        }
-
-        // 添加关闭按钮
-        JPanel buttonPanel = new JPanel(new GridLayoutManager(1, 1, new Insets(10, 10, 10, 10), -1, -1));
-        JButton closeButton = new JButton("关闭");
-        closeButton.addActionListener(e -> exampleDialog.dispose());
-        buttonPanel.add(closeButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-
-        // 设置对话框布局
-        exampleDialog.setLayout(new BorderLayout());
-        exampleDialog.add(panel, BorderLayout.CENTER);
-        exampleDialog.add(buttonPanel, BorderLayout.SOUTH);
-
-        // 设置对话框属性
-        exampleDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        ComponentUtil.setPreferSizeAndLocateToCenter(exampleDialog, 350, 350);
-        exampleDialog.setResizable(false);
-
-        // macOS 全屏内容支持
-        if (SystemUtil.isMacOs() && SystemInfo.isMacFullWindowContentSupported) {
-            exampleDialog.getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
-            exampleDialog.getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
-            exampleDialog.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
-            exampleDialog.getRootPane().putClientProperty("apple.awt.windowTitleVisible", false);
-        }
-
+        CronExampleDialog exampleDialog = new CronExampleDialog(this, expression -> {
+            cronExpressionField.setText(expression);
+            updateNextExecutionTime();
+        });
         exampleDialog.setVisible(true);
     }
 
