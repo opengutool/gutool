@@ -66,6 +66,10 @@ public class GutoolPoRepository {
                             // 转换
                             GutoolFuncPo insert = GutoolPoConvert.convertFuncPo(func);
                             funcMapper.insert(insert);
+
+                            GutoolFuncContainer.putFunc(
+                                    GutoolDDDFactory.create(
+                                            GutoolPoConvert.convertFunc(insert)));
                         } else {
                             // 先更新 source
                             func.setModifiedTime(now);

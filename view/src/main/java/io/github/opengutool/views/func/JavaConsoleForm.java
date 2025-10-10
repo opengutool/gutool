@@ -785,9 +785,11 @@ public class JavaConsoleForm {
                             } catch (Exception ex) {
                                 resultText = ExceptionUtil.stacktraceToString(ex, 500);
                             }
-                            javaConsoleForm.getResultArea().append("result:\n");
-                            javaConsoleForm.getResultArea().append(resultText);
-                            javaConsoleForm.getResultArea().append("\n");
+                            if (StrUtil.isNotBlank(resultText)) {
+                                javaConsoleForm.getResultArea().append("result:\n");
+                                javaConsoleForm.getResultArea().append(resultText);
+                                javaConsoleForm.getResultArea().append("\n");
+                            }
                             gutoolFunc.resetRunner();
                             javaConsoleForm.reloadHistoryListTable((Long) idObj);
                         });

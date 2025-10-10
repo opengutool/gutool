@@ -65,7 +65,11 @@ public class GutoolFuncRunHistory {
         this.setModifiedTime(this.getCreateTime());
 
         event = new GutoolScriptEvent();
-        event.setType(funcTabPanel.getDefine().getType());
+        if (Objects.nonNull(funcTabPanel)) {
+            event.setType(funcTabPanel.getDefine().getType());
+        } else {
+            event.setType("default");
+        }
         event.setTimestamp(this.getCreateTime().getTime());
         event.setFuncId(this.getFuncId());
         event.setTabPanelId(this.getTabPanelId());

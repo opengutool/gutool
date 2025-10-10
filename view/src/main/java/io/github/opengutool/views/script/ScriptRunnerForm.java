@@ -13,6 +13,7 @@ import io.github.opengutool.domain.func.GutoolFuncContainer;
 import io.github.opengutool.domain.func.GutoolFuncTabPanel;
 import io.github.opengutool.domain.func.GutoolFuncTabPanelDefineButton;
 import io.github.opengutool.domain.func.GutoolFuncTabPanelDefineCron;
+import io.github.opengutool.domain.scheduler.GutoolCronTaskScheduler;
 import io.github.opengutool.repository.GutoolPoQueryRepository;
 import io.github.opengutool.repository.GutoolPoRepository;
 import io.github.opengutool.repository.po.GutoolFuncRunHistoryPo;
@@ -64,13 +65,26 @@ public class ScriptRunnerForm {
     private final JButton addButton = new JButton();
     private final JButton editButton = new JButton();
     private final Spacer buttonSpacer = new Spacer();
+    private GutoolCronTaskScheduler cronTaskScheduler;
+    private final String panelType;
 
     public ScriptRunnerForm(GutoolFuncTabPanel funcTabPanel, JTabbedPane funcTabbedPane) {
 
         UndoUtil.register(this);
 
         this.funcTabPanel = funcTabPanel;
+        this.panelType = funcTabPanel.getDefine().getType();
         remarkTextArea.setText(funcTabPanel.getRemark());
+
+        // 根据类型初始化定时任务调度器
+        if ("cron".equals(this.panelType)) {
+            this.cronTaskScheduler = new GutoolCronTaskScheduler(funcTabPanel,
+                msg -> resultArea.append(msg),
+                result -> {
+                    this.reloadHistoryListTable(funcTabPanel.getId());
+                    this.reloadCronTable();
+                });
+        }
 
         // 根据类型初始化不同的输入界面
         initializeInputPanel();
@@ -106,6 +120,9 @@ public class ScriptRunnerForm {
         updateTabbedPane();
         contentSplitPane.setDividerLocation((int) (GutoolApp.mainFrame.getWidth() / 1.5));
 
+        // 启动定时任务
+        startCronTasks();
+
         // 只有非定时任务类型才添加文档监听器
         if (textTextViewer != null && textTextViewer.getDocument() != null) {
             textTextViewer.getDocument().addDocumentListener(new DocumentListener() {
@@ -138,9 +155,8 @@ public class ScriptRunnerForm {
 
     private void reloadInputPanel() {
         inputPanel.removeAll();
-        String type = funcTabPanel.getDefine().getType();
 
-        if ("cron".equals(type)) {
+        if ("cron".equals(panelType)) {
             // 定时任务类型 - 显示任务列表
             inputPanel.add(this.initCronTable(), BorderLayout.CENTER);
         } else {
@@ -330,8 +346,7 @@ public class ScriptRunnerForm {
     }
 
     private void initMenuPanel() {
-        String type = funcTabPanel.getDefine().getType();
-        if ("cron".equals(type)) {
+        if ("cron".equals(panelType)) {
             menuPanel.removeAll();
             setupCronMenuPanel();
             menuPanel.revalidate();
@@ -343,8 +358,7 @@ public class ScriptRunnerForm {
 
 
     private void reloadMenuPanel() {
-        String type = funcTabPanel.getDefine().getType();
-        if ("default".equals(type)) {
+        if ("default".equals(panelType)) {
             menuPanel.removeAll();
             setupButtonMenuPanel();
             menuPanel.revalidate();
@@ -486,8 +500,7 @@ public class ScriptRunnerForm {
      * 根据类型设置添加按钮功能
      */
     private void setupAddButtonAction() {
-        String type = funcTabPanel.getDefine().getType();
-        if ("cron".equals(type)) {
+        if ("cron".equals(panelType)) {
             // 定时任务类型 - 添加按钮用于添加定时任务
             addButton.setText("添加任务");
             addButton.setToolTipText("添加定时任务");
@@ -498,6 +511,7 @@ public class ScriptRunnerForm {
                             funcTabPanel.addCrontab(cron);
                             Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
                             this.reloadCronTable();
+                            this.reloadCronTasks(); // 重新加载定时任务
                         }
                 );
                 dialog.pack();
@@ -528,9 +542,8 @@ public class ScriptRunnerForm {
      * 根据类型初始化输入面板
      */
     private void initializeInputPanel() {
-        String type = funcTabPanel.getDefine().getType();
 
-        if ("cron".equals(type)) {
+        if ("cron".equals(panelType)) {
             // 定时任务类型，不显示文本输入区域
             textTextViewer = null;
             textTextViewerScrollPane = null;
@@ -590,10 +603,12 @@ public class ScriptRunnerForm {
 
         // 添加右键菜单
         JPopupMenu cronTablePopupMenu = new JPopupMenu();
+        JMenuItem runMenuItem = new JMenuItem("立即运行");
         JMenuItem editMenuItem = new JMenuItem("编辑");
         JMenuItem deleteMenuItem = new JMenuItem("删除");
         JMenuItem reloadMenuItem = new JMenuItem("刷新");
 
+        cronTablePopupMenu.add(runMenuItem);
         cronTablePopupMenu.add(editMenuItem);
         cronTablePopupMenu.add(deleteMenuItem);
         cronTablePopupMenu.addSeparator();
@@ -618,11 +633,20 @@ public class ScriptRunnerForm {
                         cronTable.setRowSelectionInterval(row, row);
                         // 根据是否有选中项来启用/禁用编辑和删除菜单
                         boolean hasSelection = row >= 0 && row < cronTable.getRowCount();
+                        runMenuItem.setEnabled(hasSelection);
                         editMenuItem.setEnabled(hasSelection);
                         deleteMenuItem.setEnabled(hasSelection);
                     }
                     cronTablePopupMenu.show(e.getComponent(), e.getX(), e.getY());
                 }
+            }
+        });
+
+        runMenuItem.addActionListener(e -> {
+            int selectedRow = cronTable.getSelectedRow();
+            if (selectedRow != -1 && selectedRow < funcTabPanel.getCrontab().size()) {
+                GutoolFuncTabPanelDefineCron cron = funcTabPanel.getCrontab().get(selectedRow);
+                executeCronTask(cron);
             }
         });
 
@@ -636,6 +660,7 @@ public class ScriptRunnerForm {
                             funcTabPanel.sortCrontab();
                             Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
                             this.reloadCronTable();
+                            this.reloadCronTasks(); // 重新加载定时任务
                         }
                 );
                 dialog.pack();
@@ -657,6 +682,7 @@ public class ScriptRunnerForm {
                     funcTabPanel.removeCron(funcTabPanel.getCrontab().get(selectedRow));
                     Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "删除成功");
                     reloadCronTable();
+                    this.reloadCronTasks(); // 重新加载定时任务
                 }
             }
         });
@@ -673,7 +699,6 @@ public class ScriptRunnerForm {
      * 根据类型更新标签页显示
      */
     private void updateTabbedPane() {
-        String type = funcTabPanel.getDefine().getType();
 
         // 查找"按钮列表"标签页的索引
         int buttonListTabIndex = -1;
@@ -683,7 +708,7 @@ public class ScriptRunnerForm {
                 break;
             }
         }
-        if ("cron".equals(type) && buttonListTabIndex != -1) {
+        if ("cron".equals(panelType) && buttonListTabIndex != -1) {
             tabbedPane1.removeTabAt(buttonListTabIndex);
         }
     }
@@ -867,6 +892,7 @@ public class ScriptRunnerForm {
                     Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
                     reloadInputPanel(); // 重新加载任务列表
                     reloadCronTable(); // 同时更新右侧表格
+                    this.reloadCronTasks(); // 重新加载定时任务
                 }
         );
         dialog.pack();
@@ -888,6 +914,103 @@ public class ScriptRunnerForm {
             Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "删除成功");
             reloadInputPanel(); // 重新加载任务列表
             reloadCronTable(); // 同时更新右侧表格
+            this.reloadCronTasks(); // 重新加载定时任务
+        }
+    }
+
+    /**
+     * 执行定时任务
+     */
+    private void executeCronTask(GutoolFuncTabPanelDefineCron cron) {
+        if (!cron.getEnabled()) {
+            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "任务已禁用，无法执行");
+            return;
+        }
+
+        GutoolFunc func = GutoolFuncContainer.getFuncById(cron.getCronTriggerFuncId());
+        if (Objects.isNull(func)) {
+            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "脚本未找到");
+            return;
+        }
+        if (StrUtil.isBlankOrUndefined(func.getContent())) {
+            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "脚本内容为空");
+            return;
+        }
+
+        // 运行时每次清空
+        resultArea.setText("");
+
+        // 添加执行信息
+        String executionInfo = String.format("执行定时任务: %s [%s]\n",
+                cron.getDescription(), cron.getCronExpression());
+        resultArea.append(executionInfo);
+
+        // 运行脚本
+        func.initRunner(funcTabPanel,
+                "",
+                (msg) -> resultArea.append(msg),
+                () -> {
+                    // 执行完成后的回调
+                }).asyncRun(result -> {
+
+            String resultText = "";
+            try {
+                if (result instanceof CharSequence) {
+                    resultText = result.toString();
+                } else {
+                    resultText = JSONUtil.toJsonPrettyStr(result);
+                }
+            } catch (Exception ex) {
+                resultText = ExceptionUtil.stacktraceToString(ex, 500);
+            }
+
+            resultArea.append("result:\n");
+            resultArea.append(resultText);
+            resultArea.append("\n");
+
+            func.resetRunner();
+            // 刷新历史记录表格
+            this.reloadHistoryListTable(funcTabPanel.getId());
+            // 更新定时任务表格中的执行时间
+            this.reloadCronTable();
+        });
+    }
+
+    /**
+     * 启动定时任务
+     */
+    private void startCronTasks() {
+        if ("cron".equals(panelType) && cronTaskScheduler != null) {
+            // 启动定时任务
+            cronTaskScheduler.startTasks();
+        }
+    }
+
+    /**
+     * 停止定时任务
+     */
+    private void stopCronTasks() {
+        if ("cron".equals(panelType) && cronTaskScheduler != null) {
+            cronTaskScheduler.stopTasks();
+        }
+    }
+
+    /**
+     * 重新加载定时任务
+     */
+    public void reloadCronTasks() {
+        stopCronTasks();
+        startCronTasks();
+    }
+
+    /**
+     * 清理资源
+     */
+    public void cleanup() {
+        stopCronTasks();
+        if (cronTaskScheduler != null) {
+            cronTaskScheduler.shutdown();
+            cronTaskScheduler = null;
         }
     }
 
