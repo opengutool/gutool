@@ -84,7 +84,7 @@ public class SettingDialog extends JDialog {
                     FileUtil.copy(dbFilePathBefore + File.separator + "gutool.db", dbFilePath, false);
                 }
 
-                MybatisUtil.setSqlSession(null);
+                MybatisUtil.reset();
 
                 GutoolApp.config.setDbFilePath(dbFilePath);
                 GutoolApp.config.setDbFilePathBefore(dbFilePath);

@@ -125,7 +125,7 @@ public class Init {
 
     public static void shutdown() {
         GutoolApp.saveBeforeExit();
-        MybatisUtil.getSqlSession().close();
+        MybatisUtil.shutdown();
         GutoolApp.mainFrame.dispose();
         System.exit(0);
     }

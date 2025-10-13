@@ -16,10 +16,8 @@
 package io.github.opengutool.domain.func;
 
 import io.github.opengutool.domain.formatter.GroovyCodeFormatter;
-import io.github.opengutool.domain.script.GutoolScriptRunner;
 import lombok.Data;
 
-import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -44,11 +42,6 @@ public class GutoolFunc {
     private String modifiedTime;
 
 
-    private GutoolFuncRunHistory funcRunHistory;
-    private GutoolScriptRunner scriptRunner;
-    private boolean initialize = false;
-    private boolean running = false;
-
     public boolean setName(String name) {
         if (!GutoolFuncContainer.existName(name)) {
             this.name = name;
@@ -65,9 +58,8 @@ public class GutoolFunc {
             String funcIn,
             Consumer<String> printStreamConsumer,
             Runnable endCallback) {
-        this.funcRunHistory = new GutoolFuncRunHistory(this, funcTabPanel, funcIn);
-        this.scriptRunner = new GutoolScriptRunner(this.getFuncRunHistory(), printStreamConsumer, endCallback);
-        this.initialize = true;
+        GutoolFuncRunnerContext context = GutoolFuncRunnerContext.getCurrentContext();
+        context.initRunner(this, funcTabPanel, funcIn, printStreamConsumer, endCallback);
         return this;
     }
 
@@ -75,23 +67,16 @@ public class GutoolFunc {
      * 异步运行
      */
     public <T> boolean asyncRun(Consumer<T> resultHandler) {
-        if (this.initialize && Objects.nonNull(this.scriptRunner)) {
-            this.running = true;
-            this.scriptRunner.compileAndExecuteInBackground(resultHandler);
-            return true;
-        }
-        return false;
+        GutoolFuncRunnerContext context = GutoolFuncRunnerContext.getCurrentContext();
+        return context.asyncRun(resultHandler);
     }
 
     /**
      * 重置
      */
     public boolean resetRunner() {
-        this.scriptRunner = null;
-        this.funcRunHistory = null;
-        this.initialize = false;
-        this.running = false;
-        return true;
+        GutoolFuncRunnerContext context = GutoolFuncRunnerContext.getCurrentContext();
+        return context.resetRunner();
     }
 
     /**
@@ -108,5 +93,12 @@ public class GutoolFunc {
     public boolean formatUpdateScript(String content) {
         this.content = GroovyCodeFormatter.format(content);
         return true;
+    }
+
+    /**
+     * 获取当前线程的运行历史
+     */
+    public GutoolFuncRunHistory getFuncRunHistory() {
+        return GutoolFuncRunnerContext.getCurrentContext().getFuncRunHistory();
     }
 }
