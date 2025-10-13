@@ -162,4 +162,16 @@ public class GutoolPoRepository {
     public static void deleteFuncRunHistoryById(Long historyId) {
         funcRunHistoryMapper.deleteById(historyId);
     }
+
+    public static void deleteAllFuncRunHistoryByFuncId(Long funcId) {
+        LambdaQueryWrapper<GutoolFuncRunHistoryPo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(GutoolFuncRunHistoryPo::getFuncId, funcId);
+        funcRunHistoryMapper.delete(queryWrapper);
+    }
+
+    public static void deleteAllFuncRunHistoryByTabPanelId(Long tabPanelId) {
+        LambdaQueryWrapper<GutoolFuncRunHistoryPo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(GutoolFuncRunHistoryPo::getTabPanelId, tabPanelId);
+        funcRunHistoryMapper.delete(queryWrapper);
+    }
 }

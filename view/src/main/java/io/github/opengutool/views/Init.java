@@ -33,45 +33,6 @@ public class Init {
     private static final Log logger = LogFactory.get();
 
     /**
-     * 字号初始化KEY
-     */
-    private static final String FONT_SIZE_INIT_PROP = "fontSizeInit";
-
-    /**
-     * 设置全局字体
-     */
-    public static void initGlobalFont() {
-        if (StringUtils.isEmpty(GutoolApp.config.getProps(FONT_SIZE_INIT_PROP))) {
-            // 根据DPI调整字号
-            // 得到屏幕的分辨率dpi
-            // dell 1920*1080/24寸=96
-            // 小米air 1920*1080/13.3寸=144
-            // 小米air 1366*768/13.3寸=96
-            int fontSize = 12;
-
-            // Mac等高分辨率屏幕字号初始化
-            if (SystemUtil.isMacOs()) {
-                fontSize = 12;
-            } else {
-//                fontSize = (int) (UIUtil.getScreenScale() * fontSize);
-            }
-            GutoolApp.config.setFontSize(fontSize);
-        }
-
-        Font font = new Font(GutoolApp.config.getFont(), Font.PLAIN, GutoolApp.config.getFontSize());
-        FontUIResource fontRes = new FontUIResource(font);
-        for (Enumeration<Object> keys = UIManager.getDefaults().keys(); keys.hasMoreElements(); ) {
-            Object key = keys.nextElement();
-            Object value = UIManager.get(key);
-            if (value instanceof FontUIResource) {
-                UIManager.put(key, fontRes);
-            }
-        }
-
-    }
-
-
-    /**
      * 初始化look and feel
      */
     public static void initTheme() {

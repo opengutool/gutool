@@ -248,7 +248,6 @@ public class FuncTablePanelCronDialog extends JDialog {
         cron.setOrder((Integer) orderSpinner.getValue());
 
         saveConsumer.accept(cron);
-        Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
         dispose();
     }
 

@@ -84,8 +84,6 @@ public class GutoolCronTaskScheduler {
                 scheduleTask(cron);
             }
         }
-
-        log.info("启动面板 {} 的 {} 个定时任务", panel.getName(), cronTasks.size());
     }
 
     /**
@@ -99,8 +97,6 @@ public class GutoolCronTaskScheduler {
         for (GutoolFuncTabPanelDefineCron cron : panel.getCrontab()) {
             stopTask(cron);
         }
-
-        log.info("停止面板 {} 的所有定时任务", panel.getName());
     }
 
     /**
@@ -136,8 +132,6 @@ public class GutoolCronTaskScheduler {
 
                 // 更新任务的下次执行时间
                 cron.setNextExecutionTime(java.sql.Timestamp.valueOf(nextTime.toLocalDateTime()));
-
-                log.info("调度定时任务 [{}] 下次执行时间: {}", cron.getDescription(), nextTime);
             } else {
                 log.warn("定时任务 [{}] 无有效的下次执行时间", cron.getDescription());
             }
@@ -157,7 +151,6 @@ public class GutoolCronTaskScheduler {
         ScheduledFuture<?> scheduledTask = scheduledTasks.remove(cron.getCronTriggerFuncId());
         if (scheduledTask != null) {
             scheduledTask.cancel(false);
-            log.info("停止定时任务 [{}]", cron.getDescription());
         }
     }
 
@@ -185,15 +178,6 @@ public class GutoolCronTaskScheduler {
             // 更新执行时间
             cron.setLastExecutionTime(new java.sql.Timestamp(System.currentTimeMillis()));
 
-            log.info("开始执行定时任务 [{}]", cron.getDescription());
-
-            // 添加执行信息
-            String executionInfo = String.format("执行定时任务: %s [%s]\n",
-                    cron.getDescription(), cron.getCronExpression());
-            if (this.outputCallback != null) {
-                this.outputCallback.accept(executionInfo);
-            }
-
             // 异步执行脚本
             func.initRunner(panel, "",
                     this.outputCallback,
@@ -212,7 +196,7 @@ public class GutoolCronTaskScheduler {
                     resultText = ExceptionUtil.stacktraceToString(ex, 500);
                 }
 
-                if (this.outputCallback != null) {
+                if (this.outputCallback != null && StrUtil.isNotBlank(resultText)) {
                     this.outputCallback.accept("result:\n");
                     this.outputCallback.accept(resultText);
                     this.outputCallback.accept("\n");

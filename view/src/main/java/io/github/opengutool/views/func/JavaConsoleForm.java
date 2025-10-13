@@ -266,8 +266,6 @@ public class JavaConsoleForm {
         });
 
 
-
-
         initFunTabPanel();
 
         javaConsoleForm.getFuncTabbedPane().addTab("+", funTabEmptyPanel);
@@ -298,17 +296,17 @@ public class JavaConsoleForm {
     }
 
     private static void initFunTabPanel() {
+        JTabbedPane funcTabbedPane = javaConsoleForm.getFuncTabbedPane();
         List<GutoolFuncTabPanel> funcTabPanelList = GutoolPoQueryRepository.selectFuncTabPanelAll();
         Map<String, ScriptRunnerForm> funcRunFormMap = new HashMap<>();
         for (GutoolFuncTabPanel tabPanel : funcTabPanelList) {
-            ScriptRunnerForm funcRunForm = new ScriptRunnerForm(tabPanel, javaConsoleForm.getFuncTabbedPane());
-            javaConsoleForm.getFuncTabbedPane().addTab(tabPanel.getName(), funcRunForm.getFuncRunPanel());
+            ScriptRunnerForm funcRunForm = new ScriptRunnerForm(tabPanel, funcTabbedPane);
+            funcTabbedPane.addTab(tabPanel.getName(), funcRunForm.getFuncRunPanel());
             funcRunFormMap.put(tabPanel.getName(), funcRunForm);
         }
-        javaConsoleForm.getFuncTabbedPane().addChangeListener(new ChangeListener() {
+        funcTabbedPane.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
-                final JTabbedPane funcTabbedPane = javaConsoleForm.getFuncTabbedPane();
                 int selectedIndex = funcTabbedPane.getSelectedIndex();
                 final String selectTitle = funcTabbedPane.getTitleAt(selectedIndex);
                 final ScriptRunnerForm funcRunForm = funcRunFormMap.get(selectTitle);
@@ -326,7 +324,6 @@ public class JavaConsoleForm {
                 }
             }
         });
-
     }
 
     private static volatile boolean isAddingTab = false;
@@ -481,8 +478,11 @@ public class JavaConsoleForm {
         JPopupMenu historyListTablePopupMenu = new JPopupMenu();
         JMenuItem deleteMenuItem = new JMenuItem("删除");
         JMenuItem reloadMenuItem = new JMenuItem("刷新");
+        JMenuItem clearAllMenuItem = new JMenuItem("清理全部");
         historyListTablePopupMenu.add(deleteMenuItem);
         historyListTablePopupMenu.add(reloadMenuItem);
+        historyListTablePopupMenu.addSeparator();
+        historyListTablePopupMenu.add(clearAllMenuItem);
         historyListTable.setComponentPopupMenu(null);
         // 添加鼠标监听器
         historyListTable.addMouseListener(new MouseAdapter() {
@@ -529,6 +529,26 @@ public class JavaConsoleForm {
                 // 获取隐藏列的数据（id）
                 Object funcIdValue = model.getValueAt(funcSelectedRow, 0);
                 javaConsoleForm.reloadHistoryListTable((Long) funcIdValue);
+            }
+        });
+
+        // 清理全部
+        clearAllMenuItem.addActionListener(e -> {
+            int funcSelectedRow = funcListTable.getSelectedRow();
+            if (funcSelectedRow != -1) {
+                // 获取隐藏列的数据（id）
+                Object funcIdValue = model.getValueAt(funcSelectedRow, 0);
+                int confirm = JOptionPane.showConfirmDialog(
+                        javaConsoleForm.getJavaConsolePanel(),
+                        "确定要清理该脚本的所有历史记录吗？",
+                        "确认清理",
+                        JOptionPane.YES_NO_OPTION
+                );
+                if (confirm == JOptionPane.YES_OPTION) {
+                    GutoolPoRepository.deleteAllFuncRunHistoryByFuncId((Long) funcIdValue);
+                    javaConsoleForm.reloadHistoryListTable((Long) funcIdValue);
+                    Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "清理成功");
+                }
             }
         });
 

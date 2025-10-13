@@ -83,7 +83,6 @@ public class GutoolApp {
                 }
             });
             FlatDesktop.setQuitHandler(FlatDesktop.QuitResponse::performQuit);
-
         }
 
         FlatLaf.registerCustomDefaultsSource("themes");
@@ -114,7 +113,6 @@ public class GutoolApp {
         GutoolPoRepository.init();
 
         mainFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        Init.initGlobalFont();
         mainFrame.setContentPane(MainWindow.getInstance().getMainPanel());
 
         if (SystemUtil.isLinuxOs()) {

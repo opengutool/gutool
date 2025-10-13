@@ -79,11 +79,11 @@ public class ScriptRunnerForm {
         // 根据类型初始化定时任务调度器
         if ("cron".equals(this.panelType)) {
             this.cronTaskScheduler = new GutoolCronTaskScheduler(funcTabPanel,
-                msg -> resultArea.append(msg),
-                result -> {
-                    this.reloadHistoryListTable(funcTabPanel.getId());
-                    this.reloadCronTable();
-                });
+                    msg -> resultArea.append(msg),
+                    result -> {
+                        this.reloadHistoryListTable(funcTabPanel.getId());
+                        this.reloadCronTable();
+                    });
         }
 
         // 根据类型初始化不同的输入界面
@@ -206,8 +206,11 @@ public class ScriptRunnerForm {
         JPopupMenu historyListTablePopupMenu = new JPopupMenu();
         JMenuItem deleteMenuItem = new JMenuItem("删除");
         JMenuItem reloadMenuItem = new JMenuItem("刷新");
+        JMenuItem clearAllMenuItem = new JMenuItem("清理全部");
         historyListTablePopupMenu.add(deleteMenuItem);
         historyListTablePopupMenu.add(reloadMenuItem);
+        historyListTablePopupMenu.addSeparator();
+        historyListTablePopupMenu.add(clearAllMenuItem);
         historyTable.setComponentPopupMenu(null);
         // 添加鼠标监听器
         historyTable.addMouseListener(new MouseAdapter() {
@@ -246,6 +249,21 @@ public class ScriptRunnerForm {
         // 刷新
         reloadMenuItem.addActionListener(e -> {
             this.reloadHistoryListTable(funcTabPanel.getId());
+        });
+
+        // 清理全部
+        clearAllMenuItem.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                    this.funcRunPanel,
+                    "确定要清理该面板的所有历史记录吗？",
+                    "确认清理",
+                    JOptionPane.YES_NO_OPTION
+            );
+            if (confirm == JOptionPane.YES_OPTION) {
+                GutoolPoRepository.deleteAllFuncRunHistoryByTabPanelId(funcTabPanel.getId());
+                this.reloadHistoryListTable(funcTabPanel.getId());
+                Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "清理成功");
+            }
         });
         this.reloadHistoryListTable(funcTabPanel.getId());
     }
@@ -383,7 +401,6 @@ public class ScriptRunnerForm {
             defineButton.addActionListener(e -> executeButtonScript(button));
 
             setupButtonPopupMenu(defineButton, button);
-
             menuPanel.add(defineButton, new GridConstraints(0, i, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         }
         menuPanel.add(addButton, new GridConstraints(0, size + 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
@@ -443,7 +460,7 @@ public class ScriptRunnerForm {
             if ("输出结果".equals(button.getFunOutMode())) {
                 if (funcTabPanel.isOutTextEnabled()) {
                     resultTextViewer.setText(resultText);
-                } else {
+                } else if (StrUtil.isNotBlank(resultText)) {
                     resultArea.append("result:\n");
                     resultArea.append(resultText);
                     resultArea.append("\n");
@@ -562,7 +579,7 @@ public class ScriptRunnerForm {
         final JScrollPane scrollPane1 = new JScrollPane();
         cronTable = new JTable();
         scrollPane1.setViewportView(cronTable);
-        String[] cronTableHeaderNames = {"Cron表达式", "描述", "绑定脚本", "启用状态", "下次执行", "排序"};
+        String[] cronTableHeaderNames = {"Cron表达式", "描述", "绑定脚本", "下次执行", "排序", "启用状态"};
         Object[][] cronTableEmptyData = new Object[0][cronTableHeaderNames.length];
         DefaultTableModel cronTableModel = new DefaultTableModel(cronTableEmptyData, cronTableHeaderNames) {
             @Override
@@ -578,6 +595,11 @@ public class ScriptRunnerForm {
         cronTable.setRowHeight(25);
         cronTable.setPreferredScrollableViewportSize(new Dimension(500, 200));
 
+        // 确保表格可以处理点击事件
+        cronTable.setCellSelectionEnabled(true);
+        cronTable.setRowSelectionAllowed(true);
+        cronTable.setColumnSelectionAllowed(true);
+
         // 设置列宽
         TableColumn cronColumn = cronTable.getColumnModel().getColumn(0);
         cronColumn.setPreferredWidth(120);
@@ -588,18 +610,22 @@ public class ScriptRunnerForm {
         TableColumn scriptColumn = cronTable.getColumnModel().getColumn(2);
         scriptColumn.setPreferredWidth(150);
 
-        TableColumn enabledColumn = cronTable.getColumnModel().getColumn(3);
-        enabledColumn.setPreferredWidth(80);
-        enabledColumn.setMaxWidth(80);
-        enabledColumn.setMinWidth(80);
-
-        TableColumn nextColumn = cronTable.getColumnModel().getColumn(4);
+        TableColumn nextColumn = cronTable.getColumnModel().getColumn(3);
         nextColumn.setPreferredWidth(150);
 
-        TableColumn orderColumn = cronTable.getColumnModel().getColumn(5);
+        TableColumn orderColumn = cronTable.getColumnModel().getColumn(4);
         orderColumn.setPreferredWidth(60);
         orderColumn.setMaxWidth(60);
         orderColumn.setMinWidth(60);
+
+        TableColumn enabledColumn = cronTable.getColumnModel().getColumn(5);
+        enabledColumn.setPreferredWidth(100);
+        enabledColumn.setMaxWidth(100);
+        enabledColumn.setMinWidth(100);
+
+        // 为启用状态列设置按钮渲染器（不需要编辑器，我们通过鼠标监听器直接处理）
+        enabledColumn.setCellRenderer(new CronEnabledButtonRenderer());
+
 
         // 添加右键菜单
         JPopupMenu cronTablePopupMenu = new JPopupMenu();
@@ -617,26 +643,62 @@ public class ScriptRunnerForm {
         // 添加鼠标监听器
         cronTable.addMouseListener(new MouseAdapter() {
             @Override
+            public void mouseClicked(MouseEvent e) {
+                int column = cronTable.columnAtPoint(e.getPoint());
+                int row = cronTable.rowAtPoint(e.getPoint());
+
+                // 检查是否点击了启用状态列（第5列，索引为5）
+                if (column == 5 && row >= 0 && row < cronTable.getRowCount()) {
+                    // 直接从启用状态列获取 cron 对象
+                    GutoolFuncTabPanelDefineCron cron = (GutoolFuncTabPanelDefineCron) cronTable.getValueAt(row, 5);
+                    if (cron != null) {
+                        // 切换启用状态
+                        boolean newEnabled = !(cron.getEnabled() != null ? cron.getEnabled() : true);
+                        cron.setEnabled(newEnabled);
+
+                        // 通过调用 sortCrontab 触发自动保存
+                        funcTabPanel.sortCrontab();
+
+                        Notifications.getInstance().show(Notifications.Type.SUCCESS,
+                                Notifications.Location.TOP_CENTER,
+                                newEnabled ? "已启用" : "已禁用");
+
+                        reloadCronTasks();
+                        reloadCronTable();
+
+                        return;
+                    }
+                }
+
+                // 处理右键菜单
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    showPopup(e);
+                }
+            }
+
+            @Override
             public void mousePressed(MouseEvent e) {
-                showPopup(e);
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    showPopup(e);
+                }
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                showPopup(e);
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    showPopup(e);
+                }
             }
 
             private void showPopup(MouseEvent e) {
-                if (e.isPopupTrigger()) {
-                    int row = cronTable.rowAtPoint(e.getPoint());
-                    if (row >= 0) {
-                        cronTable.setRowSelectionInterval(row, row);
-                        // 根据是否有选中项来启用/禁用编辑和删除菜单
-                        boolean hasSelection = row >= 0 && row < cronTable.getRowCount();
-                        runMenuItem.setEnabled(hasSelection);
-                        editMenuItem.setEnabled(hasSelection);
-                        deleteMenuItem.setEnabled(hasSelection);
-                    }
+                int row = cronTable.rowAtPoint(e.getPoint());
+                if (row >= 0) {
+                    cronTable.setRowSelectionInterval(row, row);
+                    // 根据是否有选中项来启用/禁用编辑和删除菜单
+                    boolean hasSelection = row >= 0 && row < cronTable.getRowCount();
+                    runMenuItem.setEnabled(hasSelection);
+                    editMenuItem.setEnabled(hasSelection);
+                    deleteMenuItem.setEnabled(hasSelection);
                     cronTablePopupMenu.show(e.getComponent(), e.getX(), e.getY());
                 }
             }
@@ -731,10 +793,10 @@ public class ScriptRunnerForm {
                     .map(funcData -> ((String) funcData[1]))
                     .findFirst()
                     .orElse("未知脚本");
-            data[3] = cron.getEnabled() ? "启用" : "禁用";
-            data[4] = cron.getNextExecutionTime() != null ?
+            data[3] = cron.getNextExecutionTime() != null ?
                     cron.getNextExecutionTime().toString() : "未计算";
-            data[5] = cron.getOrder();
+            data[4] = cron.getOrder();
+            data[5] = cron;
             model.addRow(data);
         }
     }
@@ -808,76 +870,49 @@ public class ScriptRunnerForm {
     }
 
     /**
-     * Cron 任务操作按钮渲染器
+     * Cron 启用状态按钮渲染器
      */
-    private class CronTaskButtonRenderer extends JButton implements TableCellRenderer {
+    private class CronEnabledButtonRenderer extends JButton implements TableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                                                        boolean isSelected, boolean hasFocus, int row, int column) {
-            GutoolFuncTabPanelDefineCron cron = (GutoolFuncTabPanelDefineCron) value;
-            setText("操作");
-            setToolTipText("编辑或删除此任务");
+            if (value instanceof GutoolFuncTabPanelDefineCron) {
+                GutoolFuncTabPanelDefineCron cron = (GutoolFuncTabPanelDefineCron) value;
+                boolean enabled = cron.getEnabled() != null ? cron.getEnabled() : true;
 
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
+                setText(enabled ? "启用" : "禁用");
+                setToolTipText("点击切换启用/禁用状态");
+
+                // 根据状态设置按钮颜色
+                if (enabled) {
+                    setBackground(new Color(76, 175, 80)); // 绿色
+                    setForeground(Color.WHITE);
+                } else {
+                    setBackground(new Color(244, 67, 54)); // 红色
+                    setForeground(Color.WHITE);
+                }
+
+                setFocusPainted(false);
+                setBorderPainted(false);
+                setOpaque(true);
+                setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+                // 添加悬停效果
+                if (hasFocus) {
+                    setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
+                } else if (isSelected) {
+                    setBorder(BorderFactory.createLineBorder(table.getSelectionBackground(), 2));
+                } else {
+                    setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
+                }
             } else {
-                setBackground(table.getBackground());
-                setForeground(table.getForeground());
+                setText("未知");
+                setBackground(Color.LIGHT_GRAY);
+                setForeground(Color.BLACK);
+                setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
             }
 
             return this;
-        }
-    }
-
-    /**
-     * Cron 任务操作按钮编辑器
-     */
-    private class CronTaskButtonEditor extends DefaultCellEditor {
-        private JPanel buttonPanel;
-        private JButton editButton;
-        private JButton deleteButton;
-        private GutoolFuncTabPanelDefineCron currentCron;
-
-        public CronTaskButtonEditor(DefaultTableModel model) {
-            super(new JCheckBox());
-
-            buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-            editButton = new JButton("编辑");
-            deleteButton = new JButton("删除");
-
-            // 设置按钮样式
-            editButton.setPreferredSize(new Dimension(60, 25));
-            deleteButton.setPreferredSize(new Dimension(60, 25));
-
-            editButton.addActionListener(e -> {
-                if (currentCron != null) {
-                    editCronTask(currentCron);
-                }
-                fireEditingStopped();
-            });
-
-            deleteButton.addActionListener(e -> {
-                if (currentCron != null) {
-                    deleteCronTask(currentCron);
-                }
-                fireEditingStopped();
-            });
-
-            buttonPanel.add(editButton);
-            buttonPanel.add(deleteButton);
-        }
-
-        @Override
-        public Component getTableCellEditorComponent(JTable table, Object value,
-                                                     boolean isSelected, int row, int column) {
-            currentCron = (GutoolFuncTabPanelDefineCron) value;
-            return buttonPanel;
-        }
-
-        @Override
-        public Object getCellEditorValue() {
-            return currentCron;
         }
     }
 
@@ -940,11 +975,6 @@ public class ScriptRunnerForm {
         // 运行时每次清空
         resultArea.setText("");
 
-        // 添加执行信息
-        String executionInfo = String.format("执行定时任务: %s [%s]\n",
-                cron.getDescription(), cron.getCronExpression());
-        resultArea.append(executionInfo);
-
         // 运行脚本
         func.initRunner(funcTabPanel,
                 "",
@@ -963,10 +993,11 @@ public class ScriptRunnerForm {
             } catch (Exception ex) {
                 resultText = ExceptionUtil.stacktraceToString(ex, 500);
             }
-
-            resultArea.append("result:\n");
-            resultArea.append(resultText);
-            resultArea.append("\n");
+            if (StrUtil.isNotBlank(resultText)) {
+                resultArea.append("result:\n");
+                resultArea.append(resultText);
+                resultArea.append("\n");
+            }
 
             func.resetRunner();
             // 刷新历史记录表格
