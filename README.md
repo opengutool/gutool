@@ -21,39 +21,34 @@
 
 ## 功能清单 📋
 
-* [x] **编辑脚本** ✍️
+* ✅ **编辑脚本** ✍️
 
-* [x] **绑定脚本按钮触发** 🖲️
+* ✅ **绑定脚本按钮触发** 🖲️
 
-* [ ] **绑定脚本定时触发** ⏰
+* ✅ **绑定脚本定时触发** ⏰
 
-* [ ] **绑定脚本请求触发** 🌐
+* ⏳ **绑定脚本请求触发** 🌐
 
-* [ ] **Windows、Mac、Linux 打包** 💻
+* ⏳ **Windows、Mac、Linux 打包** 💻
 
-* [ ] 预置脚本和面板  📖
+* ⏳ 预置脚本和面板  📖
 
-* [ ] 预置 Groovy 、Hutool手册 📖
+* ⏳ 预置 Groovy 、Hutool手册 📖
 
-* [ ] ... ✨
+* ⏳ ... ✨
 
   
 
 
 ## 免责申明 ⚠️
 
-本人非 985、非 211、大专出身，是从业 10 年的 Java 初级开发工程师 ☕，写出来的代码难免有 Bug 🐞，也仅在业余时间维护，不要有太多期待。
+本项目仅在业余时间维护，不要有太多期待🤪。
 
-如发现代码写得不好，对代码有洁癖的，请提出您的 Pull requests 📬 （`Talk is cheap. Show me the code.`）。
+本人虽然是从业 10 年的 Javaer ☕，但是写出来的代码难免有 Bug 🐞。 那么，使用时发现了Bug 🐞，请提 Issues 和 Pull Requests 🌹，我会尽快处理和合并。
 
-如发现 Bug，请提 Issues；如有 Bug 修复，请提 Pull requests 📬。
+当然，如发现代码写得不好，请也提出您的 Pull Requests 🌹 （`Talk is cheap. Show me the code.`）。
 
-最后，本人是 Groovy 爱好者 ❤️，是 Hutool 死忠粉 💪。
-
-一切针对 [Groovy](https://groovy-lang.org/) 诋毁 —— 左耳进右耳出 👂➡️👂。
-
-一切针对 [Hutool](https://hutool.cn/) 争议 —— 自动静音 🔇。
-
+最后声明，本人是 Groovy 和 Hutool 爱好者 ❤️，针对 [Groovy](https://groovy-lang.org/) 和 [Hutool](https://hutool.cn/) 的争议我不会辩解 —— 自动屏蔽📵。
 
 
 
@@ -70,7 +65,7 @@
 
 ## 最终声明 📜
 
-本项目大部分代码借鉴自：[MooTool](https://mootool.luoboduner.com/) （如有雷同，请溯源获取）🔍。
+本项目有部分代码借鉴自：[MooTool](https://mootool.luoboduner.com/) （如有雷同，请溯源获取）🔍。
 
 <p align="center">
 <a href="https://mootool.luoboduner.com/"><img src="https://mootool.luoboduner.com/logo/logo-256.png" alt="MooTool" height="50" ></a>
