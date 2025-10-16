@@ -631,16 +631,11 @@ public class ScriptRunnerForm {
 
         // 添加右键菜单
         JPopupMenu cronTablePopupMenu = new JPopupMenu();
-        JMenuItem runMenuItem = new JMenuItem("立即运行");
         JMenuItem editMenuItem = new JMenuItem("编辑");
         JMenuItem deleteMenuItem = new JMenuItem("删除");
-        JMenuItem reloadMenuItem = new JMenuItem("刷新");
 
-        cronTablePopupMenu.add(runMenuItem);
         cronTablePopupMenu.add(editMenuItem);
         cronTablePopupMenu.add(deleteMenuItem);
-        cronTablePopupMenu.addSeparator();
-        cronTablePopupMenu.add(reloadMenuItem);
 
         // 添加鼠标监听器
         cronTable.addMouseListener(new MouseAdapter() {
@@ -698,7 +693,6 @@ public class ScriptRunnerForm {
                     cronTable.setRowSelectionInterval(row, row);
                     // 根据是否有选中项来启用/禁用编辑和删除菜单
                     boolean hasSelection = row >= 0 && row < cronTable.getRowCount();
-                    runMenuItem.setEnabled(hasSelection);
                     editMenuItem.setEnabled(hasSelection);
                     deleteMenuItem.setEnabled(hasSelection);
                     cronTablePopupMenu.show(e.getComponent(), e.getX(), e.getY());
@@ -706,13 +700,6 @@ public class ScriptRunnerForm {
             }
         });
 
-        runMenuItem.addActionListener(e -> {
-            int selectedRow = cronTable.getSelectedRow();
-            if (selectedRow != -1 && selectedRow < funcTabPanel.getCrontab().size()) {
-                GutoolFuncTabPanelDefineCron cron = funcTabPanel.getCrontab().get(selectedRow);
-                executeCronTask(cron);
-            }
-        });
 
         editMenuItem.addActionListener(e -> {
             int selectedRow = cronTable.getSelectedRow();
@@ -750,8 +737,6 @@ public class ScriptRunnerForm {
                 }
             }
         });
-
-        reloadMenuItem.addActionListener(e -> reloadCronTable());
 
         // 初始加载数据
         reloadCronTable();
@@ -908,60 +893,6 @@ public class ScriptRunnerForm {
 
             return this;
         }
-    }
-
-    /**
-     * 执行定时任务
-     */
-    private void executeCronTask(GutoolFuncTabPanelDefineCron cron) {
-        if (!cron.getEnabled()) {
-            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "任务已禁用，无法执行");
-            return;
-        }
-
-        GutoolFunc func = GutoolFuncContainer.getFuncById(cron.getCronTriggerFuncId());
-        if (Objects.isNull(func)) {
-            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "脚本未找到");
-            return;
-        }
-        if (StrUtil.isBlankOrUndefined(func.getContent())) {
-            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "脚本内容为空");
-            return;
-        }
-
-        // 运行时每次清空
-        resultArea.setText("");
-
-        // 运行脚本
-        func.initRunner(funcTabPanel,
-                "",
-                (msg) -> resultArea.append(msg),
-                () -> {
-                    // 执行完成后的回调
-                }).asyncRun(result -> {
-
-            String resultText = "";
-            try {
-                if (result instanceof CharSequence) {
-                    resultText = result.toString();
-                } else {
-                    resultText = JSONUtil.toJsonPrettyStr(result);
-                }
-            } catch (Exception ex) {
-                resultText = ExceptionUtil.stacktraceToString(ex, 500);
-            }
-            if (StrUtil.isNotBlank(resultText)) {
-                resultArea.append("result:\n");
-                resultArea.append(resultText);
-                resultArea.append("\n");
-            }
-
-            func.resetRunner();
-            // 刷新历史记录表格
-            this.reloadHistoryListTable(funcTabPanel.getId());
-            // 更新定时任务表格中的执行时间
-            this.reloadCronTable();
-        });
     }
 
     /**
