@@ -20,6 +20,7 @@ import io.github.opengutool.repository.GutoolPoRepository;
 import io.github.opengutool.repository.po.GutoolFuncRunHistoryPo;
 import io.github.opengutool.views.component.textviewer.JsonRSyntaxTextViewer;
 import io.github.opengutool.views.component.textviewer.JsonRTextScrollPane;
+import io.github.opengutool.views.util.DialogUtil;
 import io.github.opengutool.views.util.JTableUtil;
 import io.github.opengutool.views.util.UndoUtil;
 import lombok.Getter;
@@ -255,17 +256,15 @@ public class ScriptRunnerForm {
 
         // 清理全部
         clearAllMenuItem.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(
-                    this.funcRunPanel,
-                    "确定要清理该面板的所有历史记录吗？",
-                    "确认清理",
-                    JOptionPane.YES_NO_OPTION
-            );
-            if (confirm == JOptionPane.YES_OPTION) {
-                GutoolPoRepository.deleteAllFuncRunHistoryByTabPanelId(funcTabPanel.getId());
-                this.reloadHistoryListTable(funcTabPanel.getId());
-                Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "清理成功");
-            }
+            DialogUtil.showDialog(this.funcRunPanel, "确定要清理该面板的所有历史记录吗？", "清理所有历史记录",
+                    () -> {
+                        GutoolPoRepository.deleteAllFuncRunHistoryByTabPanelId(funcTabPanel.getId());
+                        this.reloadHistoryListTable(funcTabPanel.getId());
+                        Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "清理成功");
+                    },
+                    () -> {
+
+                    });
         });
         this.reloadHistoryListTable(funcTabPanel.getId());
     }
@@ -722,19 +721,16 @@ public class ScriptRunnerForm {
         deleteMenuItem.addActionListener(e -> {
             int selectedRow = cronTable.getSelectedRow();
             if (selectedRow != -1 && selectedRow < funcTabPanel.getCrontab().size()) {
-                int confirm = JOptionPane.showConfirmDialog(
-                        cronTable,
-                        "确定要删除这个定时任务吗？",
-                        "确认删除",
-                        JOptionPane.YES_NO_OPTION
-                );
-                if (confirm == JOptionPane.YES_OPTION) {
-                    // 根据行号直接删除对应的定时任务对象
-                    funcTabPanel.removeCron(funcTabPanel.getCrontab().get(selectedRow));
-                    Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "删除成功");
-                    reloadCronTable();
-                    this.reloadCronTasks(); // 重新加载定时任务
-                }
+                DialogUtil.showDialog(cronTable, "确定要删除这个定时任务吗？", "删除定时任务",
+                        () -> {
+                            funcTabPanel.removeCron(funcTabPanel.getCrontab().get(selectedRow));
+                            Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "删除成功");
+                            reloadCronTable();
+                            this.reloadCronTasks();
+                        },
+                        () -> {
+
+                        });
             }
         });
 

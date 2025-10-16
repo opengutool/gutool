@@ -236,8 +236,8 @@ public class FuncTablePanelCronDialog extends JDialog {
         }
 
         if (scriptId == null) {
-            Notifications.getInstance().show(Notifications.Type.ERROR, Notifications.Location.TOP_CENTER, "无法获取脚本ID");
-            return;
+`            Notifications.getInstance().show(Notifications.Type.ERROR, Notifications.Location.TOP_CENTER, "无法获取脚本ID");
+`            return;
         }
 
         // 保存数据

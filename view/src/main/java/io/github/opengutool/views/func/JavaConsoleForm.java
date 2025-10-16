@@ -25,6 +25,7 @@ import io.github.opengutool.views.form.MainWindow;
 import io.github.opengutool.views.script.FuncTabPanelDialog;
 import io.github.opengutool.views.script.ScriptRunDialog;
 import io.github.opengutool.views.script.ScriptRunnerForm;
+import io.github.opengutool.views.util.DialogUtil;
 import io.github.opengutool.views.util.JTableUtil;
 import io.github.opengutool.views.util.UndoUtil;
 import io.github.pigmesh.ai.deepseek.core.DeepSeekClient;
@@ -538,17 +539,15 @@ public class JavaConsoleForm {
             if (funcSelectedRow != -1) {
                 // 获取隐藏列的数据（id）
                 Object funcIdValue = model.getValueAt(funcSelectedRow, 0);
-                int confirm = JOptionPane.showConfirmDialog(
-                        javaConsoleForm.getJavaConsolePanel(),
-                        "确定要清理该脚本的所有历史记录吗？",
-                        "确认清理",
-                        JOptionPane.YES_NO_OPTION
-                );
-                if (confirm == JOptionPane.YES_OPTION) {
-                    GutoolPoRepository.deleteAllFuncRunHistoryByFuncId((Long) funcIdValue);
-                    javaConsoleForm.reloadHistoryListTable((Long) funcIdValue);
-                    Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "清理成功");
-                }
+                DialogUtil.showDialog(javaConsoleForm.getJavaConsolePanel(), "确定要清理该脚本的所有历史记录吗？", "清理所有历史记录",
+                        () -> {
+                            GutoolPoRepository.deleteAllFuncRunHistoryByFuncId((Long) funcIdValue);
+                            javaConsoleForm.reloadHistoryListTable((Long) funcIdValue);
+                            Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "清理成功");
+                        },
+                        () -> {
+
+                        });
             }
         });
 
@@ -631,22 +630,30 @@ public class JavaConsoleForm {
 
     private static void updateFuncName(int row, Long idObj, String oldName) {
         JTable funcListTable = javaConsoleForm.getFuncTable();
-        String newName = (String) JOptionPane.showInputDialog(
-                MainWindow.getInstance().getMainPanel(), "", "重命名", JOptionPane.PLAIN_MESSAGE,
-                null, null, oldName);
-        if (StrUtil.isBlankOrUndefined(newName)
-                || StrUtil.isBlankOrUndefined(newName.trim())
-                || newName.trim().equals(oldName)) {
-            return;
-        }
-        newName = newName.trim();
-        GutoolFunc gutoolFunc = GutoolFuncContainer.getFuncById(idObj);
-        if (!gutoolFunc.setName(newName)) {
-            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "已存在重名脚本");
-            return;
-        }
-        funcListTable.setValueAt(newName, row, 1);
-        Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
+        DialogUtil.showInputDialog(
+                MainWindow.getInstance().getMainPanel(),
+                "重命名脚本",
+                "请输入新的名称：",
+                oldName,
+                newName -> {
+                    if (StrUtil.isBlankOrUndefined(newName)
+                            || StrUtil.isBlankOrUndefined(newName.trim())
+                            || newName.trim().equals(oldName)) {
+                        return;
+                    }
+                    newName = newName.trim();
+                    GutoolFunc gutoolFunc = GutoolFuncContainer.getFuncById(idObj);
+                    if (!gutoolFunc.setName(newName)) {
+                        Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "已存在重名脚本");
+                        return;
+                    }
+                    funcListTable.setValueAt(newName, row, 1);
+                    Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
+                },
+                () -> {
+
+                }
+        );
     }
 
 
@@ -831,32 +838,42 @@ public class JavaConsoleForm {
         javaConsoleForm.getFormat().addActionListener(e -> javaConsoleForm.codeFormatter());
 
         javaConsoleForm.getAdd().addActionListener(e -> {
-            // 弹出输入框获取函数名称
-            String name = JOptionPane.showInputDialog("请输入名称：");
-            if (StrUtil.isBlankOrUndefined(name) || StrUtil.isBlankOrUndefined(name.trim())) {
-                Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "名称不能为空");
-                return;
-            }
-            name = name.trim();
-            GutoolFunc func = GutoolDDDFactory.create(new GutoolFunc());
-            if (!func.setName(name)) {
-                Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "名称已存在");
-                return;
-            }
-            // 重新加载表格
-            javaConsoleForm.reloadFuncListTable();
 
-            // 定位到新增的行（假设 name 是唯一的）
-            JTable funcListTable = javaConsoleForm.getFuncTable();
-            DefaultTableModel model = (DefaultTableModel) funcListTable.getModel();
-            for (int i = 0; i < model.getRowCount(); i++) {
-                Object idValue = model.getValueAt(i, 0);
-                if (idValue != null && idValue.toString().equals(func.getId().toString())) {
-                    funcListTable.setRowSelectionInterval(i, i);
-                    javaConsoleForm.reloadHistoryListTable((Long) idValue);
-                    break;
-                }
-            }
+            DialogUtil.showInputDialog(
+                    MainWindow.getInstance().getMainPanel(),
+                    "新建脚本",
+                    "请输入名称：",
+                    "",
+                    name -> {
+                        if (StrUtil.isBlankOrUndefined(name) || StrUtil.isBlankOrUndefined(name.trim())) {
+                            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "名称不能为空");
+                            return;
+                        }
+                        name = name.trim();
+                        GutoolFunc func = GutoolDDDFactory.create(new GutoolFunc());
+                        if (!func.setName(name)) {
+                            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "名称已存在");
+                            return;
+                        }
+                        // 重新加载表格
+                        javaConsoleForm.reloadFuncListTable();
+
+                        // 定位到新增的行（假设 name 是唯一的）
+                        JTable funcListTable = javaConsoleForm.getFuncTable();
+                        DefaultTableModel model = (DefaultTableModel) funcListTable.getModel();
+                        for (int i = 0; i < model.getRowCount(); i++) {
+                            Object idValue = model.getValueAt(i, 0);
+                            if (idValue != null && idValue.toString().equals(func.getId().toString())) {
+                                funcListTable.setRowSelectionInterval(i, i);
+                                javaConsoleForm.reloadHistoryListTable((Long) idValue);
+                                break;
+                            }
+                        }
+                    },
+                    () -> {
+
+                    }
+            );
         });
 
         javaConsoleForm.getSave().addActionListener(e -> javaConsoleForm.saveFunc());

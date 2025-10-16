@@ -14,6 +14,7 @@ import io.github.opengutool.views.util.ScrollUtil;
 import io.github.opengutool.views.util.SystemUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import raven.toast.Notifications;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -74,7 +75,7 @@ public class SettingDialog extends JDialog {
                 // 复制之前的数据文件到新位置
                 String dbFilePathBefore = GutoolApp.config.getDbFilePathBefore();
                 if (dbFilePathBefore.equals(dbFilePath)) {
-                    JOptionPane.showMessageDialog(contentPane, "保存成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                    Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
                     return;
                 }
                 if (StringUtils.isBlank(dbFilePathBefore)) {
@@ -89,11 +90,11 @@ public class SettingDialog extends JDialog {
                 GutoolApp.config.setDbFilePath(dbFilePath);
                 GutoolApp.config.setDbFilePathBefore(dbFilePath);
                 GutoolApp.config.save();
-                JOptionPane.showMessageDialog(contentPane, "保存成功！\n\n需要重启Gutool生效", "成功", JOptionPane.INFORMATION_MESSAGE);
-                JOptionPane.showMessageDialog(contentPane, "Gutool即将关闭！\n\n关闭后需要手动再次打开", "Gutool即将关闭", JOptionPane.INFORMATION_MESSAGE);
+                Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功！\n\n需要重启Gutool生效");
+                Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "Gutool即将关闭！\\n\\n关闭后需要手动再次打开\", \"Gutool即将关闭");
                 System.exit(0);
             } catch (Exception e1) {
-                JOptionPane.showMessageDialog(contentPane, "保存失败！\n\n" + e1.getMessage(), "失败", JOptionPane.ERROR_MESSAGE);
+                Notifications.getInstance().show(Notifications.Type.ERROR, Notifications.Location.TOP_CENTER, "保存失败！\n\n" + e1.getMessage());
                 logger.error(ExceptionUtils.getStackTrace(e1));
             }
         });

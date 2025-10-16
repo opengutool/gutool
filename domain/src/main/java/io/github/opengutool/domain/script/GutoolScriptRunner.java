@@ -44,7 +44,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * @author harry.lee
+ * @author <a href="https://github.com/opengutool">gutool</a>
  * @since 2025/9/3
  * 脚本运行器
  */

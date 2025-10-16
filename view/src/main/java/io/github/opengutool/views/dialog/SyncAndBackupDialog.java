@@ -10,6 +10,7 @@ import io.github.opengutool.views.util.ComponentUtil;
 import io.github.opengutool.views.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import raven.toast.Notifications;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -88,9 +89,7 @@ public class SyncAndBackupDialog extends JDialog {
             File exportFile = FileUtil.touch(exportPath + File.separator + "gutool.db");
 
             FileUtil.copy(FileUtil.file(localDataPath), exportFile, true);
-
-            JOptionPane.showMessageDialog(this, "导出成功！", "提示",
-                    JOptionPane.INFORMATION_MESSAGE);
+            Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "导出成功！");
             try {
                 Desktop desktop = Desktop.getDesktop();
                 desktop.open(new File(exportPath));
@@ -115,8 +114,7 @@ public class SyncAndBackupDialog extends JDialog {
 
             FileUtil.copy(FileUtil.file(localConfigPath), exportFile, true);
 
-            JOptionPane.showMessageDialog(this, "导出成功！", "提示",
-                    JOptionPane.INFORMATION_MESSAGE);
+            Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "导出成功！");
             try {
                 Desktop desktop = Desktop.getDesktop();
                 desktop.open(new File(exportPath));
