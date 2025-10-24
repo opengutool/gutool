@@ -8,6 +8,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import io.github.opengutool.GutoolApp;
+import io.github.opengutool.views.UiConsts;
 import io.github.opengutool.views.util.ComponentUtil;
 import io.github.opengutool.views.util.MybatisUtil;
 import io.github.opengutool.views.util.ScrollUtil;
@@ -39,6 +40,7 @@ public class SettingDialog extends JDialog {
     public SettingDialog() {
 
         super(GutoolApp.mainFrame, "设置");
+        setIconImage(UiConsts.IMAGE_LOGO_64);
         ComponentUtil.setPreferSizeAndLocateToCenter(this, 0.5, 0.6);
         setContentPane(contentPane);
         setModal(true);

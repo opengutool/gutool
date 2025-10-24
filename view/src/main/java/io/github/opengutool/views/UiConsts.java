@@ -1,5 +1,6 @@
 package io.github.opengutool.views;
 
+import javax.swing.*;
 import java.awt.*;
 
 /**
@@ -23,5 +24,10 @@ public class UiConsts {
      */
     public static final Image IMAGE_LOGO_64 = Toolkit.getDefaultToolkit()
             .getImage(UiConsts.class.getResource("/icons/gutool-64.png"));
+
+    /**
+     * ICON-64*64
+     */
+    public static final ImageIcon IMAGE_ICON_64 = new ImageIcon(UiConsts.class.getResource("/icons/gutool-64.png"));
 
 }

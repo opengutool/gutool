@@ -109,6 +109,7 @@ public class JavaConsoleForm {
     private ReplaceDialog replaceDialog;
     private GoToDialog gotoDialog;
     private static JavaConsoleForm javaConsoleForm;
+    private static Map<String, ScriptRunnerForm> funcRunFormMap = new ConcurrentHashMap<>();
 
     private static Map<String, List<Completion>> COMPLETION_CLASS_METHOD_MAP = new ConcurrentHashMap<>();
 
@@ -127,6 +128,12 @@ public class JavaConsoleForm {
             javaConsoleForm = new JavaConsoleForm();
         }
         return javaConsoleForm;
+    }
+
+    public void shutdown() {
+        for (ScriptRunnerForm form : funcRunFormMap.values()) {
+            form.cleanup();
+        }
     }
 
     public static void init() {
@@ -299,7 +306,6 @@ public class JavaConsoleForm {
     private static void initFunTabPanel() {
         JTabbedPane funcTabbedPane = javaConsoleForm.getFuncTabbedPane();
         List<GutoolFuncTabPanel> funcTabPanelList = GutoolPoQueryRepository.selectFuncTabPanelAll();
-        Map<String, ScriptRunnerForm> funcRunFormMap = new HashMap<>();
         for (GutoolFuncTabPanel tabPanel : funcTabPanelList) {
             ScriptRunnerForm funcRunForm = new ScriptRunnerForm(tabPanel, funcTabbedPane);
             funcTabbedPane.addTab(tabPanel.getName(), funcRunForm.getFuncRunPanel());
@@ -345,6 +351,7 @@ public class JavaConsoleForm {
                 FuncTabPanelDialog dialog = new FuncTabPanelDialog(null, funcTabPanel -> {
                     ScriptRunnerForm funcRunForm = new ScriptRunnerForm(funcTabPanel, funcTabbedPane);
                     funcTabbedPane.addTab(funcTabPanel.getName(), funcRunForm.getFuncRunPanel());
+                    funcRunFormMap.put(funcTabPanel.getName(), funcRunForm);
                     // 自动选中新加的 tab
                     funcTabbedPane.setSelectedIndex(funcTabbedPane.getTabCount() - 1);
                     isAddingTab = false;
@@ -633,7 +640,7 @@ public class JavaConsoleForm {
         DialogUtil.showInputDialog(
                 MainWindow.getInstance().getMainPanel(),
                 "重命名脚本",
-                "请输入新的名称：",
+                "请输入新的名称",
                 oldName,
                 newName -> {
                     if (StrUtil.isBlankOrUndefined(newName)
@@ -842,7 +849,7 @@ public class JavaConsoleForm {
             DialogUtil.showInputDialog(
                     MainWindow.getInstance().getMainPanel(),
                     "新建脚本",
-                    "请输入名称：",
+                    "请输入名称",
                     "",
                     name -> {
                         if (StrUtil.isBlankOrUndefined(name) || StrUtil.isBlankOrUndefined(name.trim())) {

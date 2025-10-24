@@ -59,9 +59,10 @@ public class GutoolCronTaskScheduler {
     private final Consumer<Object> resultHandler;
     private final CronDefinition cronDefinition;
     private final CronParser cronParser;
+    private volatile boolean isRunning = false;
 
     public GutoolCronTaskScheduler(GutoolFuncTabPanel panel, Consumer<String> outputCallback, Consumer<Object> resultHandler) {
-        this.scheduler = Executors.newScheduledThreadPool(5);
+        this.scheduler = Executors.newScheduledThreadPool(getThreadPoolSize(panel));
         this.scheduledTasks = new ConcurrentHashMap<>();
         this.panel = panel;
         this.outputCallback = outputCallback;
@@ -71,9 +72,26 @@ public class GutoolCronTaskScheduler {
     }
 
     /**
+     * 获取线程池大小
+     * @param panel 面板配置
+     * @return 线程池大小
+     */
+    private int getThreadPoolSize(GutoolFuncTabPanel panel) {
+        if (panel != null && panel.getDefine() != null && panel.getDefine().getThreadPoolSize() != null) {
+            return panel.getDefine().getThreadPoolSize();
+        }
+        return 5; // 默认5个线程
+    }
+
+    /**
      * 启动定时任务
      */
     public void startTasks() {
+        if (isRunning) {
+            return;
+        }
+
+        isRunning = true;
         if (panel == null || panel.getCrontab() == null) {
             return;
         }
@@ -84,19 +102,30 @@ public class GutoolCronTaskScheduler {
                 scheduleTask(cron);
             }
         }
+        log.info("定时任务调度器已启动，共调度 {} 个任务", cronTasks.stream().filter(GutoolFuncTabPanelDefineCron::getEnabled).count());
     }
 
     /**
      * 停止定时任务
      */
     public void stopTasks() {
-        if (panel == null || panel.getCrontab() == null) {
+        if (!isRunning) {
             return;
         }
 
-        for (GutoolFuncTabPanelDefineCron cron : panel.getCrontab()) {
-            stopTask(cron);
+        if (panel == null || panel.getCrontab() == null) {
+            isRunning = false;
+            return;
         }
+
+        int stoppedCount = 0;
+        for (GutoolFuncTabPanelDefineCron cron : panel.getCrontab()) {
+            if (stopTask(cron)) {
+                stoppedCount++;
+            }
+        }
+        isRunning = false;
+        log.info("定时任务调度器已停止，共停止 {} 个任务", stoppedCount);
     }
 
     /**
@@ -143,15 +172,17 @@ public class GutoolCronTaskScheduler {
     /**
      * 停止单个定时任务
      */
-    public void stopTask(GutoolFuncTabPanelDefineCron cron) {
+    public boolean stopTask(GutoolFuncTabPanelDefineCron cron) {
         if (cron == null || cron.getCronTriggerFuncId() == null) {
-            return;
+            return false;
         }
 
         ScheduledFuture<?> scheduledTask = scheduledTasks.remove(cron.getCronTriggerFuncId());
         if (scheduledTask != null) {
             scheduledTask.cancel(false);
+            return true;
         }
+        return false;
     }
 
     /**
@@ -212,9 +243,42 @@ public class GutoolCronTaskScheduler {
     }
 
     /**
+     * 获取调度器状态
+     * @return 调度器状态字符串
+     */
+    public String getSchedulerStatus() {
+        if (scheduler.isShutdown()) {
+            return "已停止";
+        } else if (scheduler.isTerminated()) {
+            return "已终止";
+        } else if (isRunning) {
+            return "运行中";
+        } else {
+            return "已停止";
+        }
+    }
+
+    /**
+     * 检查调度器是否正在运行
+     * @return true 如果正在运行，否则 false
+     */
+    public boolean isRunning() {
+        return isRunning && !scheduler.isShutdown() && !scheduler.isTerminated();
+    }
+
+    /**
+     * 获取当前调度的任务数量
+     * @return 调度的任务数量
+     */
+    public int getScheduledTaskCount() {
+        return scheduledTasks.size();
+    }
+
+    /**
      * 关闭调度器
      */
     public void shutdown() {
+        isRunning = false;
         scheduler.shutdown();
         try {
             if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {

@@ -8,17 +8,14 @@ import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import com.jthemedetecor.OsThemeDetector;
 import io.github.opengutool.GutoolApp;
+import io.github.opengutool.views.func.JavaConsoleForm;
 import io.github.opengutool.views.util.MybatisUtil;
-import io.github.opengutool.views.util.SystemUtil;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import javax.swing.*;
-import javax.swing.plaf.FontUIResource;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Enumeration;
 
 /**
  * <pre>
@@ -124,7 +121,8 @@ public class Init {
     }
 
     public static void shutdown() {
-        GutoolApp.saveBeforeExit();
+        GutoolApp.config.save();
+        JavaConsoleForm.getInstance().shutdown();
         MybatisUtil.shutdown();
         GutoolApp.mainFrame.dispose();
         System.exit(0);

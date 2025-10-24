@@ -16,7 +16,6 @@ import io.github.opengutool.repository.mapper.GutoolFuncTabPanelMapper;
 import io.github.opengutool.repository.po.GutoolFuncPo;
 import io.github.opengutool.repository.po.GutoolFuncRunHistoryPo;
 import io.github.opengutool.views.util.MybatisUtil;
-import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 import java.util.Objects;
@@ -133,12 +132,17 @@ public class GutoolPoRepository {
                 GutoolFuncTabPanel.class,
                 GutoolDDDMethodAroundType.AFTER,
                 (event) -> insertOrUpdateFuncTabPanel(event.getSource()),
-                GutoolFuncTabPanel::sortButtons);
+                GutoolFuncTabPanel::setAll);
         GutoolDDDFactory.listen(
                 GutoolFuncTabPanel.class,
                 GutoolDDDMethodAroundType.AFTER,
                 (event) -> insertOrUpdateFuncTabPanel(event.getSource()),
-                GutoolFuncTabPanel::setAll);
+                GutoolFuncTabPanel::setHttpPort, GutoolFuncTabPanel::setThreadPoolSize);
+        GutoolDDDFactory.listen(
+                GutoolFuncTabPanel.class,
+                GutoolDDDMethodAroundType.AFTER,
+                (event) -> insertOrUpdateFuncTabPanel(event.getSource()),
+                GutoolFuncTabPanel::setAutoEnabled);
         GutoolDDDFactory.listen(
                 GutoolFuncTabPanel.class,
                 GutoolDDDMethodAroundType.AFTER,
@@ -148,7 +152,13 @@ public class GutoolPoRepository {
                 GutoolFuncTabPanel.class,
                 GutoolDDDMethodAroundType.AFTER,
                 (event) -> insertOrUpdateFuncTabPanel(event.getSource()),
-                GutoolFuncTabPanel::sortCrontab);
+                GutoolFuncTabPanel::addHttpConfig, GutoolFuncTabPanel::removeHttpConfig);
+
+        GutoolDDDFactory.listen(
+                GutoolFuncTabPanel.class,
+                GutoolDDDMethodAroundType.AFTER,
+                (event) -> insertOrUpdateFuncTabPanel(event.getSource()),
+                GutoolFuncTabPanel::sortButtons, GutoolFuncTabPanel::sortCrontab, GutoolFuncTabPanel::sortHttpConfigs);
     }
 
     // funcTabPanel

@@ -4,6 +4,7 @@ import com.formdev.flatlaf.util.SystemInfo;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
+import io.github.opengutool.views.UiConsts;
 import io.github.opengutool.views.util.ComponentUtil;
 import io.github.opengutool.views.util.SystemUtil;
 
@@ -28,6 +29,8 @@ public class ScriptRunDialog extends JDialog {
     public ScriptRunDialog(Consumer<String> okConsumer) {
         this.okConsumer = okConsumer;
         setContentPane(contentPane);
+        setTitle("运行代码");
+        setIconImage(UiConsts.IMAGE_LOGO_64);
         setModal(true);
         ComponentUtil.setPreferSizeAndLocateToCenter(this, 350, 200);
         setResizable(false);

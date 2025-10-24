@@ -1,6 +1,6 @@
 package io.github.opengutool.views.util;
 
-import raven.toast.Notifications;
+import io.github.opengutool.views.UiConsts;
 
 import javax.swing.*;
 import java.awt.*;
@@ -27,18 +27,42 @@ public class DialogUtil {
                 options,
                 yesButton
         );
-        JDialog dialog = pane.createDialog(parentComponent, title);
+
+        JDialog dialog = new JDialog((Frame)null, title, true);
+        dialog.setContentPane(pane);
+        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        dialog.setIconImage(UiConsts.IMAGE_LOGO_64);
+
+        // 添加监听器处理按钮事件
+        pane.addPropertyChangeListener(e -> {
+            if (e.getPropertyName().equals(JOptionPane.VALUE_PROPERTY)) {
+                dialog.setVisible(false);
+            }
+        });
+
+        // 处理点击X按钮关闭对话框
+        dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                pane.setValue(cancelButton);
+                dialog.setVisible(false);
+            }
+        });
+
+        dialog.pack();
+        dialog.setLocationRelativeTo(parentComponent);
+
         yesButton.addActionListener(e -> {
             pane.setValue(yesButton);
-            dialog.dispose();
         });
         cancelButton.addActionListener(e -> {
             pane.setValue(cancelButton);
-            dialog.dispose();
         });
 
         dialog.setVisible(true);
         Object selected = pane.getValue();
+        dialog.dispose();
+
         if (selected == yesButton) {
             if (Objects.nonNull(successCallback)) {
                 successCallback.run();
@@ -74,20 +98,42 @@ public class DialogUtil {
                 okButton
         );
 
-        JDialog dialog = pane.createDialog(parentComponent, title);
+        JDialog dialog = new JDialog((Frame)null, title, true);
+        dialog.setContentPane(pane);
+        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        dialog.setIconImage(UiConsts.IMAGE_LOGO_64);
+
+        // 添加监听器处理按钮事件
+        pane.addPropertyChangeListener(e -> {
+            if (e.getPropertyName().equals(JOptionPane.VALUE_PROPERTY)) {
+                dialog.setVisible(false);
+            }
+        });
+
+        // 处理点击X按钮关闭对话框
+        dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                pane.setValue(cancelButton);
+                dialog.setVisible(false);
+            }
+        });
+
+        dialog.pack();
+        dialog.setLocationRelativeTo(parentComponent);
 
         okButton.addActionListener(e -> {
             pane.setValue(okButton);
-            dialog.dispose();
         });
         cancelButton.addActionListener(e -> {
             pane.setValue(cancelButton);
-            dialog.dispose();
         });
 
         dialog.setVisible(true);
 
         Object selected = pane.getValue();
+        dialog.dispose();
+
         if (selected == okButton) {
             String input = textField.getText();
             if (Objects.nonNull(successCallback)) {

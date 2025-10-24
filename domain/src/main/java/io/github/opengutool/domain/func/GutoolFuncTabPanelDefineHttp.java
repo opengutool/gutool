@@ -18,35 +18,59 @@ package io.github.opengutool.domain.func;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 
 /**
+ * HTTP服务配置
  * @author <a href="https://github.com/opengutool">gutool</a>
- * @since 2025/9/3
+ * @since 2025/10/20
  */
 @Data
-public class GutoolFuncTabPanelDefine implements Serializable {
+public class GutoolFuncTabPanelDefineHttp implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * default("button"), "cron", "http"
+     * 是否启用HTTP服务
      */
-    private String type = "default";
-    private String funcIn = "";
-    private List<GutoolFuncTabPanelDefineButton> buttons = new ArrayList<>();
-    private Boolean outTextEnabled = Boolean.FALSE;
-    private int port = 0;
-    private Boolean autoEnabled = Boolean.FALSE;
-    private Integer threadPoolSize = 5;
+    private Boolean enabled = false;
 
     /**
-     * 定时任务配置列表
+     * 服务器状态
      */
-    private List<GutoolFuncTabPanelDefineCron> crontab = new ArrayList<>();
+    private String status = "stopped"; // stopped, running, error
 
     /**
-     * HTTP服务配置列表
+     * 绑定的脚本ID
      */
-    private List<GutoolFuncTabPanelDefineHttp> httpConfigs = new ArrayList<>();
+    private Long httpTriggerFuncId;
+
+    /**
+     * HTTP方法
+     */
+    private String method = "GET"; // GET, POST, PUT, DELETE
+
+    /**
+     * 路由路径
+     */
+    private String path = "/";
+
+    /**
+     * 响应内容类型
+     */
+    private String contentType = "application/json";
+
+    /**
+     * 描述
+     */
+    private String description;
+
+    /**
+     * 排序
+     */
+    private Integer order = 0;
+
+    /**
+     * 最后访问时间
+     */
+    private Date lastAccessTime;
 }

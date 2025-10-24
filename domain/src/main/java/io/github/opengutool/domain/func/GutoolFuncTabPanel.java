@@ -41,8 +41,6 @@ public class GutoolFuncTabPanel implements Serializable {
 
     private String modifiedTime;
 
-    List<GutoolFuncRunHistory> funcRunHistoryList;
-
 
     public boolean setFuncIn(String funcIn) {
         this.getDefine().setFuncIn(funcIn);
@@ -64,8 +62,8 @@ public class GutoolFuncTabPanel implements Serializable {
         return define.getButtons();
     }
 
-    public boolean isOutTextEnabled() {
-        return this.getDefine().isOutTextEnabled();
+    public boolean getOutTextEnabled() {
+        return this.getDefine().getOutTextEnabled();
     }
 
     public boolean sortButtons() {
@@ -135,5 +133,71 @@ public class GutoolFuncTabPanel implements Serializable {
             return true;
         }
         return false;
+    }
+
+    /**
+     * 添加 HTTP 配置
+     *
+     * @param httpConfig HTTP 配置
+     * @return 是否添加成功
+     */
+    public boolean addHttpConfig(GutoolFuncTabPanelDefineHttp httpConfig) {
+        if (Objects.isNull(this.getDefine())) {
+            this.setDefine(new GutoolFuncTabPanelDefine());
+        }
+        this.getDefine().getHttpConfigs().add(httpConfig);
+        this.getDefine().getHttpConfigs().sort(Comparator.comparingInt(GutoolFuncTabPanelDefineHttp::getOrder));
+        return true;
+    }
+
+    /**
+     * 移除 HTTP 配置
+     *
+     * @param httpConfig 要移除的 HTTP 配置
+     * @return 是否移除成功
+     */
+    public boolean removeHttpConfig(GutoolFuncTabPanelDefineHttp httpConfig) {
+        if (Objects.nonNull(this.getDefine()) && Objects.nonNull(this.getDefine().getHttpConfigs())) {
+            return this.getDefine().getHttpConfigs().remove(httpConfig);
+        }
+        return false;
+    }
+
+    /**
+     * 获取所有 HTTP 配置
+     *
+     * @return HTTP 配置列表
+     */
+    public List<GutoolFuncTabPanelDefineHttp> getHttpConfigs() {
+        return this.getDefine().getHttpConfigs();
+    }
+
+
+    /**
+     * 排序 HTTP 配置
+     *
+     * @return 是否排序成功
+     */
+    public boolean sortHttpConfigs() {
+        if (Objects.nonNull(this.getDefine()) && Objects.nonNull(this.getDefine().getHttpConfigs())) {
+            this.getDefine().getHttpConfigs().sort(Comparator.comparingInt(GutoolFuncTabPanelDefineHttp::getOrder));
+            return true;
+        }
+        return false;
+    }
+
+    public boolean setHttpPort(Integer httpPort) {
+        this.getDefine().setPort(httpPort);
+        return true;
+    }
+
+    public boolean setAutoEnabled(boolean httpStart) {
+        this.getDefine().setAutoEnabled(httpStart);
+        return true;
+    }
+
+    public boolean setThreadPoolSize(Integer threadPoolSize) {
+        this.getDefine().setThreadPoolSize(threadPoolSize);
+        return true;
     }
 }

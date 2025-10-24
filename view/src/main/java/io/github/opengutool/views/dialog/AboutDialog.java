@@ -5,6 +5,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import io.github.opengutool.GutoolApp;
+import io.github.opengutool.views.UiConsts;
 import io.github.opengutool.views.util.ComponentUtil;
 import io.github.opengutool.views.util.ScrollUtil;
 import io.github.opengutool.views.util.SystemUtil;
@@ -30,6 +31,7 @@ public class AboutDialog extends JDialog {
     public AboutDialog() {
 
         super(GutoolApp.mainFrame, "关于");
+        setIconImage(UiConsts.IMAGE_LOGO_64);
         ComponentUtil.setPreferSizeAndLocateToCenter(this, 0.5, 0.68);
         setContentPane(contentPane);
         setModal(true);

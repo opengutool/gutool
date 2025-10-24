@@ -112,7 +112,7 @@ public class GutoolApp {
 
         GutoolPoRepository.init();
 
-        mainFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.setContentPane(MainWindow.getInstance().getMainPanel());
 
         if (SystemUtil.isLinuxOs()) {
@@ -156,15 +156,7 @@ public class GutoolApp {
 
             @Override
             public void windowClosing(WindowEvent e) {
-                saveBeforeExit();
-                if (SystemUtil.isWindowsOs()) {
-                    GutoolApp.mainFrame.setVisible(false);
-                } else if (SystemUtil.isMacOs()) {
-                    // 最小化窗口
-                    GutoolApp.mainFrame.setExtendedState(Frame.ICONIFIED);
-                } else {
-                    GutoolApp.mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                }
+                Init.shutdown();
             }
 
             @Override
@@ -224,10 +216,5 @@ public class GutoolApp {
         // Command + W 最小化窗口
         MainWindow.getInstance().getMainPanel().registerKeyboardAction(e -> GutoolApp.mainFrame.setExtendedState(Frame.ICONIFIED), KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.META_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
 
-    }
-
-    public static void saveBeforeExit() {
-        // App.config.setRecentTabIndex(MainWindow.getInstance().getTabbedPane().getSelectedIndex());
-        GutoolApp.config.save();
     }
 }
