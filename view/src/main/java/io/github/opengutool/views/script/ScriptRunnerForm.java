@@ -1322,7 +1322,11 @@ public class ScriptRunnerForm {
      */
     private void startCronTasks() {
         if ("cron".equals(panelType) && cronTaskScheduler != null) {
-            cronTaskScheduler.startTasks();
+            if (funcTabPanel.getDefine().getAutoEnabled()
+                    && funcTabPanel.getCrontab().stream()
+                    .anyMatch(GutoolFuncTabPanelDefineCron::getEnabled)) {
+                cronTaskScheduler.startTasks();
+            }
             // 更新按钮状态
             updateCronToggleButton();
             // 更新状态标签

@@ -210,8 +210,8 @@ public class FuncTabPanelDialog extends JDialog {
 
     private void onOK() {
         String nameText = nameTextField.getText().trim();
-        if (StrUtil.length(nameText) > 5) {
-            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "名称不能超过5个字符");
+        if (StrUtil.length(nameText) > 15) {
+            Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "名称不能超过15个字符");
             return;
         }
 
