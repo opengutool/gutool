@@ -42,6 +42,11 @@ public class GutoolFuncRunnerContext {
         THREAD_LOCAL_CONTEXT.remove();
     }
 
+    public static void setCurrentContext(GutoolFuncRunnerContext currentContext) {
+        THREAD_LOCAL_CONTEXT.remove();
+        THREAD_LOCAL_CONTEXT.set(currentContext);
+    }
+
     public GutoolFuncRunHistory getFuncRunHistory() {
         return funcRunHistory;
     }

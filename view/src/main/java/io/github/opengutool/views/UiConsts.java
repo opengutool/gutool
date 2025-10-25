@@ -17,7 +17,7 @@ public class UiConsts {
      * 软件名称,版本
      */
     public static final String APP_NAME = "Gutool";
-    public static final String APP_VERSION = "v1.1.1";
+    public static final String APP_VERSION = "v1.1.2";
 
     /**
      * Logo-64*64

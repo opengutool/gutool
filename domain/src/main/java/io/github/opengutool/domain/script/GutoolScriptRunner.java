@@ -24,6 +24,7 @@ import cn.hutool.json.JSONUtil;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import io.github.opengutool.domain.func.GutoolFuncRunHistory;
+import io.github.opengutool.domain.func.GutoolFuncRunnerContext;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,9 +139,11 @@ public class GutoolScriptRunner {
     }
 
     private void changeOutInBackground(Binding binding, Supplier<Object> supplier, BiConsumer<String, Object> resultHandler) {
+        final GutoolFuncRunnerContext currentContext = GutoolFuncRunnerContext.getCurrentContext();
         new SwingWorker<Void, String>() {  // Changed Void to String to publish intermediate output
             @Override
             protected Void doInBackground() throws Exception {
+                GutoolFuncRunnerContext.setCurrentContext(currentContext);
                 try (final RealTimeStream realTimeStream = new RealTimeStream(this::publish);
                      PrintStream cacheStream = new PrintStream(realTimeStream, true)) {
                     // 绑定自定义的 PrintStream
