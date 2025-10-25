@@ -1,12 +1,11 @@
 package io.github.opengutool.views.script;
 
-import com.formdev.flatlaf.util.SystemInfo;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import io.github.opengutool.views.UiConsts;
 import io.github.opengutool.views.util.ComponentUtil;
-import io.github.opengutool.views.util.SystemUtil;
+import io.github.opengutool.views.util.MacWindowUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -34,14 +33,8 @@ public class ScriptRunDialog extends JDialog {
         setModal(true);
         ComponentUtil.setPreferSizeAndLocateToCenter(this, 350, 200);
         setResizable(false);
-        if (SystemUtil.isMacOs() && SystemInfo.isMacFullWindowContentSupported) {
-            this.getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
-            this.getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
-            this.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
-            this.getRootPane().putClientProperty("apple.awt.windowTitleVisible", false);
-            GridLayoutManager gridLayoutManager = (GridLayoutManager) formPanel.getLayout();
-            gridLayoutManager.setMargin(new Insets(20, 10, 0, 10));
-        }
+        MacWindowUtil.configureMacFullscreenContent(this);
+        MacWindowUtil.configureMacInsets(contentPane, MacWindowUtil.DIALOG_WINDOW_INSETS);
         getRootPane().setDefaultButton(buttonOK);
 
         buttonOK.addActionListener(new ActionListener() {

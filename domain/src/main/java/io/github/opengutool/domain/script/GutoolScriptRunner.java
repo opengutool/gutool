@@ -15,12 +15,11 @@
  */
 package io.github.opengutool.domain.script;
 
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import io.github.opengutool.common.exception.GutoolExceptionHandler;
+import io.github.opengutool.common.logging.GutoolOutputFormatter;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import io.github.opengutool.domain.func.GutoolFuncRunHistory;
@@ -36,8 +35,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -71,7 +68,7 @@ public class GutoolScriptRunner {
         GroovyShell shell;
         String tmpFile = TMP_FILE_PATH + "ScriptTemp" + counter.incrementAndGet() + ".groovy";
         try {
-            printStr("-----start-----");
+            printStr(GutoolOutputFormatter.formatStartMarker());
             final File file = FileUtil.touch(tmpFile);
             FileUtil.writeString(funcRunHistory.getFuncMirror(), file, Charset.defaultCharset());
             Binding binding = new Binding();
@@ -104,10 +101,12 @@ public class GutoolScriptRunner {
                 }
             });
         } catch (Exception e) {
-            printStrOrigin(ExceptionUtil.stacktraceToString(e, Integer.MAX_VALUE));
-            printStr("-----error-----");
-            funcRunHistory.update(ExceptionUtil.stacktraceToString(e, 1000), "error");
-            runEndCallback.run();
+            GutoolExceptionHandler.handleException(e, "script compilation and execution", errorInfo -> {
+                printStrOrigin(GutoolExceptionHandler.formatFullException(e));
+                printStr(GutoolOutputFormatter.formatErrorMarker());
+                funcRunHistory.update(GutoolExceptionHandler.formatMediumException(e), "error");
+                runEndCallback.run();
+            });
         }
     }
 
@@ -122,15 +121,15 @@ public class GutoolScriptRunner {
                 }
             } catch (Exception e) {
                 status = "error";
-                funcOut = ExceptionUtil.stacktraceToString(e, 1000);
+                funcOut = GutoolExceptionHandler.formatMediumException(e);
             }
         }
         funcRunHistory.update(funcOut, status);
     }
 
     private void printStr(String str) {
-        if (StrUtil.isNotBlank(str)) {
-            runPrintStreamConsumer.accept(DateUtil.format(new Date(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " " + str.trim() + "\r\n");
+        if (str != null && !str.trim().isEmpty()) {
+            runPrintStreamConsumer.accept(GutoolOutputFormatter.formatWithTimestamp(str));
         }
     }
 
@@ -153,9 +152,9 @@ public class GutoolScriptRunner {
                     realTimeStream.flush();
                     return null;
                 } catch (Exception e) {
-                    resultHandler.accept("error", ExceptionUtil.stacktraceToString(e, 1000));
-                    printStrOrigin(ExceptionUtil.stacktraceToString(e, Integer.MAX_VALUE));
-                    printStr("-----error-----");
+                    resultHandler.accept("error", GutoolExceptionHandler.formatMediumException(e));
+                    printStrOrigin(GutoolExceptionHandler.formatFullException(e));
+                    printStr(GutoolOutputFormatter.formatErrorMarker());
                     return null;
                 }
             }
@@ -169,7 +168,7 @@ public class GutoolScriptRunner {
 
             @Override
             protected void done() {
-                printStr("-----end-----");
+                printStr(GutoolOutputFormatter.formatEndMarker());
                 runEndCallback.run();
             }
         }.execute();

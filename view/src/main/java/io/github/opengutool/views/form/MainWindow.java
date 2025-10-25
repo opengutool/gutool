@@ -1,14 +1,10 @@
 package io.github.opengutool.views.form;
 
-import com.formdev.flatlaf.util.SystemInfo;
-import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.GridLayoutManager;
 import io.github.opengutool.views.func.JavaConsoleForm;
-import io.github.opengutool.views.util.SystemUtil;
+import io.github.opengutool.views.util.MacWindowUtil;
 import lombok.Getter;
 
 import javax.swing.*;
-import java.awt.*;
 
 /**
  * <pre>
@@ -37,11 +33,8 @@ public class MainWindow {
     public void init() {
         mainWindow = getInstance();
         mainWindow.getMainPanel().updateUI();
-        if (SystemUtil.isMacOs() && SystemInfo.isMacFullWindowContentSupported) {
-            GridLayoutManager gridLayoutManager = (GridLayoutManager) mainPanel.getLayout();
-            gridLayoutManager.setMargin(new Insets(25, 0, 0, 0));
-            mainWindow.getMainPanel().updateUI();
-        }
+        MacWindowUtil.configureMacInsets(mainPanel, MacWindowUtil.MAIN_PANEL_INSETS);
+        mainWindow.getMainPanel().updateUI();
     }
 
     {

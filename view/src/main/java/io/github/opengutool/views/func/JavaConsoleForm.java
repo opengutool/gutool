@@ -1,7 +1,6 @@
 package io.github.opengutool.views.func;
 
 import cn.hutool.Hutool;
-import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.ReflectUtil;
@@ -13,6 +12,8 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import io.github.opengutool.GutoolApp;
 import io.github.opengutool.common.ddd.GutoolDDDFactory;
+import io.github.opengutool.common.exception.GutoolExceptionHandler;
+import io.github.opengutool.common.logging.GutoolOutputFormatter;
 import io.github.opengutool.domain.formatter.GroovyCodeFormatter;
 import io.github.opengutool.domain.func.GutoolFunc;
 import io.github.opengutool.domain.func.GutoolFuncContainer;
@@ -76,7 +77,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -817,12 +817,10 @@ public class JavaConsoleForm {
                                     resultText = JSONUtil.toJsonPrettyStr(result);
                                 }
                             } catch (Exception ex) {
-                                resultText = ExceptionUtil.stacktraceToString(ex, 500);
+                                resultText = GutoolExceptionHandler.formatShortException(ex);
                             }
                             if (StrUtil.isNotBlank(resultText)) {
-                                javaConsoleForm.getResultArea().append("result:\n");
-                                javaConsoleForm.getResultArea().append(resultText);
-                                javaConsoleForm.getResultArea().append("\n");
+                                javaConsoleForm.getResultArea().append(GutoolOutputFormatter.formatResultPrefix(resultText));
                             }
                             gutoolFunc.resetRunner();
                             javaConsoleForm.reloadHistoryListTable((Long) idObj);

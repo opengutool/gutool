@@ -1,12 +1,12 @@
 package io.github.opengutool.views.dialog;
 
 import cn.hutool.core.io.FileUtil;
-import com.formdev.flatlaf.util.SystemInfo;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import io.github.opengutool.GutoolApp;
 import io.github.opengutool.views.util.ComponentUtil;
+import io.github.opengutool.views.util.MacWindowUtil;
 import io.github.opengutool.views.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -17,7 +17,9 @@ import javax.swing.border.TitledBorder;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.text.StyleContext;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.Locale;
 
@@ -48,14 +50,8 @@ public class SyncAndBackupDialog extends JDialog {
         setContentPane(contentPane);
         setModal(true);
 
-        if (SystemUtil.isMacOs() && SystemInfo.isMacFullWindowContentSupported) {
-            this.getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
-            this.getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
-            this.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
-            this.getRootPane().putClientProperty("apple.awt.windowTitleVisible", false);
-            GridLayoutManager gridLayoutManager = (GridLayoutManager) contentPane.getLayout();
-            gridLayoutManager.setMargin(new Insets(28, 0, 0, 0));
-        }
+        MacWindowUtil.configureMacFullscreenContent(this);
+        MacWindowUtil.configureMacInsets(contentPane, MacWindowUtil.DIALOG_WINDOW_INSETS);
 
         String localDataPath = SystemUtil.CONFIG_HOME + File.separator + "gutool.db";
         localDataPathTextField.setText(localDataPath);

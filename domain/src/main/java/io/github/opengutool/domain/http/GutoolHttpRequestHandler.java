@@ -15,9 +15,11 @@
  */
 package io.github.opengutool.domain.http;
 
-import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import io.github.opengutool.common.constants.GutoolExceptionConstants;
+import io.github.opengutool.common.exception.GutoolExceptionHandler;
+import io.github.opengutool.common.logging.GutoolOutputFormatter;
 import io.github.opengutool.domain.func.GutoolFunc;
 import io.github.opengutool.domain.func.GutoolFuncContainer;
 import io.github.opengutool.domain.func.GutoolFuncTabPanel;
@@ -51,7 +53,7 @@ import java.util.function.Consumer;
 @Slf4j
 public class GutoolHttpRequestHandler extends HttpServlet {
 
-    private static final long MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
+    private static final long MAX_CONTENT_LENGTH = GutoolExceptionConstants.MAX_HTTP_CONTENT_LENGTH;
     private static final Set<String> ALLOWED_METHODS = Set.of("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS");
 
     private final GutoolFuncTabPanel panel;
@@ -228,7 +230,7 @@ public class GutoolHttpRequestHandler extends HttpServlet {
         func.initRunner(panel, "",
                         message -> {
                             if (outputCallback != null) {
-                                outputCallback.accept(String.format("[ %s %s ]%s", config.getMethod(), normalizePath, message));
+                                outputCallback.accept(GutoolOutputFormatter.formatHttpLog(config.getMethod(), normalizePath, message));
                             }
                         },
                         () -> {
@@ -249,9 +251,7 @@ public class GutoolHttpRequestHandler extends HttpServlet {
 
             // 输出回调
             if (outputCallback != null && StrUtil.isNotBlank(resultText)) {
-                outputCallback.accept("result:\n");
-                outputCallback.accept(resultText);
-                outputCallback.accept("\n");
+                outputCallback.accept(GutoolOutputFormatter.formatResultPrefix(resultText));
             }
 
             // 结果处理器
@@ -286,7 +286,7 @@ public class GutoolHttpRequestHandler extends HttpServlet {
                 return JSONUtil.toJsonPrettyStr(result);
             }
         } catch (Exception ex) {
-            return ExceptionUtil.stacktraceToString(ex, 500);
+            return GutoolExceptionHandler.formatShortException(ex);
         }
     }
 

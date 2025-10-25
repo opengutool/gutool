@@ -1,16 +1,14 @@
 package io.github.opengutool.views.dialog;
 
-import com.formdev.flatlaf.util.SystemInfo;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import io.github.opengutool.views.util.ComponentUtil;
-import io.github.opengutool.views.util.SystemUtil;
+import io.github.opengutool.views.util.MacWindowUtil;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.awt.Dialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -47,14 +45,8 @@ public class CronExampleDialog extends JDialog {
         setResizable(false);
 
         // macOS 全屏内容支持
-        if (SystemUtil.isMacOs() && SystemInfo.isMacFullWindowContentSupported) {
-            this.getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
-            this.getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
-            this.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
-            this.getRootPane().putClientProperty("apple.awt.windowTitleVisible", false);
-            GridLayoutManager gridLayoutManager = (GridLayoutManager) contentPane.getLayout();
-            gridLayoutManager.setMargin(new Insets(28, 10, 0, 10));
-        }
+        MacWindowUtil.configureMacFullscreenContent(this);
+        MacWindowUtil.configureMacInsets(contentPane, MacWindowUtil.DIALOG_WINDOW_INSETS);
 
         setupListeners();
         getRootPane().setDefaultButton(buttonOk);

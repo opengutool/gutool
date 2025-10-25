@@ -1,7 +1,6 @@
 package io.github.opengutool.views.script;
 
 import cn.hutool.core.util.StrUtil;
-import com.formdev.flatlaf.util.SystemInfo;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
@@ -9,7 +8,7 @@ import io.github.opengutool.common.ddd.GutoolDDDFactory;
 import io.github.opengutool.domain.func.GutoolFuncTabPanel;
 import io.github.opengutool.views.UiConsts;
 import io.github.opengutool.views.util.ComponentUtil;
-import io.github.opengutool.views.util.SystemUtil;
+import io.github.opengutool.views.util.MacWindowUtil;
 import raven.toast.Notifications;
 
 import javax.swing.*;
@@ -101,14 +100,8 @@ public class FuncTabPanelDialog extends JDialog {
         setContentPane(contentPane);
         setResizable(false);
         setModal(true);
-        if (SystemUtil.isMacOs() && SystemInfo.isMacFullWindowContentSupported) {
-            this.getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
-            this.getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
-            this.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
-            this.getRootPane().putClientProperty("apple.awt.windowTitleVisible", false);
-            GridLayoutManager gridLayoutManager = (GridLayoutManager) contentPane.getLayout();
-            gridLayoutManager.setMargin(new Insets(28, 10, 0, 10));
-        }
+        MacWindowUtil.configureMacFullscreenContent(this);
+        MacWindowUtil.configureMacInsets(contentPane, MacWindowUtil.DIALOG_WINDOW_INSETS);
 
         getRootPane().setDefaultButton(saveButton);
 

@@ -4,7 +4,6 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
-import com.formdev.flatlaf.util.SystemInfo;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
@@ -12,7 +11,7 @@ import io.github.opengutool.domain.func.GutoolFuncTabPanelDefineButton;
 import io.github.opengutool.repository.GutoolPoQueryRepository;
 import io.github.opengutool.views.UiConsts;
 import io.github.opengutool.views.util.ComponentUtil;
-import io.github.opengutool.views.util.SystemUtil;
+import io.github.opengutool.views.util.MacWindowUtil;
 import raven.toast.Notifications;
 
 import javax.swing.*;
@@ -23,7 +22,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +35,7 @@ public class FuncTabPanelBtnDialog extends JDialog {
     private JButton buttonCancel;
     private JPanel formPanel;
     private JTextField nameTextField;
-    private JFormattedTextField orderFormattedTextField;
+    private JSpinner orderSpinner;
     private JTextArea remarkTextField;
     private JComboBox<String> funcComboBox;
     private JComboBox<String> funOutModeComboBox;
@@ -60,14 +58,8 @@ public class FuncTabPanelBtnDialog extends JDialog {
         setContentPane(contentPane);
         setModal(true);
         setResizable(false);
-        if (SystemUtil.isMacOs() && SystemInfo.isMacFullWindowContentSupported) {
-            this.getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
-            this.getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
-            this.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
-            this.getRootPane().putClientProperty("apple.awt.windowTitleVisible", false);
-            GridLayoutManager gridLayoutManager = (GridLayoutManager) contentPane.getLayout();
-            gridLayoutManager.setMargin(new Insets(28, 10, 0, 10));
-        }
+        MacWindowUtil.configureMacFullscreenContent(this);
+        MacWindowUtil.configureMacInsets(contentPane, MacWindowUtil.DIALOG_WINDOW_INSETS);
 
         getRootPane().setDefaultButton(saveButton);
 
@@ -82,7 +74,10 @@ public class FuncTabPanelBtnDialog extends JDialog {
                     funcComboBox.setSelectedIndex(0);
                 }
             }
-            orderFormattedTextField.setValue(funTabPanelDefineButton.getOrder());
+            orderSpinner.setValue(funTabPanelDefineButton.getOrder() != null ? funTabPanelDefineButton.getOrder() : 0);
+        } else {
+            // 新建按钮时默认显示"请选择脚本"
+            funcComboBox.setSelectedIndex(0);
         }
 
         saveButton.addActionListener(new ActionListener() {
@@ -123,7 +118,7 @@ public class FuncTabPanelBtnDialog extends JDialog {
             Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "名称不能超过5个字符");
             return;
         }
-        if (Objects.isNull(selecFunc)) {
+        if (Objects.isNull(selecFunc) || funcComboBox.getSelectedIndex() <= 0) {
             Notifications.getInstance().show(Notifications.Type.WARNING, Notifications.Location.TOP_CENTER, "请选择绑定脚本");
             return;
         }
@@ -133,7 +128,7 @@ public class FuncTabPanelBtnDialog extends JDialog {
         funTabPanelDefineButton.setActionTriggerFuncId((Long) selecFunc[0]);
         funTabPanelDefineButton.setText(nameText);
         funTabPanelDefineButton.setToolTipText(remarkTextField.getText());
-        funTabPanelDefineButton.setOrder(NumberUtil.parseInt(StrUtil.toString(orderFormattedTextField.getValue()), funTabPanelDefineButton.getOrder()));
+        funTabPanelDefineButton.setOrder((Integer) orderSpinner.getValue());
         saveConsumer.accept(funTabPanelDefineButton);
         // add your code here
         dispose();
@@ -184,7 +179,7 @@ public class FuncTabPanelBtnDialog extends JDialog {
         final JLabel label3 = new JLabel();
         label3.setText("排序");
         formPanel.add(label3, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        formPanel.add(orderFormattedTextField, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        formPanel.add(orderSpinner, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JScrollPane scrollPane1 = new JScrollPane();
         formPanel.add(scrollPane1, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         remarkTextField = new JTextArea();
@@ -211,21 +206,25 @@ public class FuncTabPanelBtnDialog extends JDialog {
 
     private void createUIComponents() {
         // TODO: place custom component creation code here
-        NumberFormat numberFormat = NumberFormat.getNumberInstance();
-        orderFormattedTextField = new JFormattedTextField(numberFormat);
+        orderSpinner = new JSpinner();
         funcComboBox = new JComboBox<>();
         List<Object[]> funcDataObjectList = GutoolPoQueryRepository.selectFuncAllDataObjectList();
         this.funcList = funcDataObjectList;
+        funcComboBox.addItem("请选择脚本");
         for (int i = 0; i < funcDataObjectList.size(); i++) {
             final Object[] funcDataObject = funcDataObjectList.get(i);
             funcComboBox.addItem((String) funcDataObject[1]);
-            funcIdIndexMap.put((Long) funcDataObject[0], i);
+            funcIdIndexMap.put((Long) funcDataObject[0], i + 1);
         }
         funcComboBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                selecFunc = funcDataObjectList.stream()
-                        .filter(funcDataObject -> ((String) funcDataObject[1]).equals(funcComboBox.getSelectedItem())).findFirst().orElse(null);
+                if (funcComboBox.getSelectedIndex() > 0) {
+                    selecFunc = funcDataObjectList.stream()
+                            .filter(funcDataObject -> ((String) funcDataObject[1]).equals(funcComboBox.getSelectedItem())).findFirst().orElse(null);
+                } else {
+                    selecFunc = null;
+                }
             }
         });
         // funcComboBox.setEditable(true);

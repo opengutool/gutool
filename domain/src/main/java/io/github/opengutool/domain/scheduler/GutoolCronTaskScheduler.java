@@ -15,9 +15,11 @@
  */
 package io.github.opengutool.domain.scheduler;
 
-import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import io.github.opengutool.common.constants.GutoolExceptionConstants;
+import io.github.opengutool.common.exception.GutoolExceptionHandler;
+import io.github.opengutool.common.logging.GutoolOutputFormatter;
 import com.cronutils.model.Cron;
 import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinition;
@@ -80,7 +82,7 @@ public class GutoolCronTaskScheduler {
         if (panel != null && panel.getDefine() != null && panel.getDefine().getThreadPoolSize() != null) {
             return panel.getDefine().getThreadPoolSize();
         }
-        return 5; // 默认5个线程
+        return GutoolExceptionConstants.DEFAULT_THREAD_POOL_SIZE;
     }
 
     /**
@@ -224,13 +226,11 @@ public class GutoolCronTaskScheduler {
                         resultText = JSONUtil.toJsonPrettyStr(result);
                     }
                 } catch (Exception ex) {
-                    resultText = ExceptionUtil.stacktraceToString(ex, 500);
+                    resultText = GutoolExceptionHandler.formatShortException(ex);
                 }
 
                 if (this.outputCallback != null && StrUtil.isNotBlank(resultText)) {
-                    this.outputCallback.accept("result:\n");
-                    this.outputCallback.accept(resultText);
-                    this.outputCallback.accept("\n");
+                    this.outputCallback.accept(GutoolOutputFormatter.formatResultPrefix(resultText));
                 }
                 if (Objects.nonNull(this.resultHandler)) {
                     this.resultHandler.accept(result);

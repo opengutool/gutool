@@ -1,7 +1,6 @@
 package io.github.opengutool.views.script;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
@@ -9,6 +8,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import io.github.opengutool.GutoolApp;
+import io.github.opengutool.common.exception.GutoolExceptionHandler;
 import io.github.opengutool.domain.func.GutoolFunc;
 import io.github.opengutool.domain.func.GutoolFuncContainer;
 import io.github.opengutool.domain.func.GutoolFuncTabPanel;
@@ -658,7 +658,7 @@ public class ScriptRunnerForm {
                     resultText = JSONUtil.toJsonPrettyStr(result);
                 }
             } catch (Exception ex) {
-                resultText = ExceptionUtil.stacktraceToString(ex, 500);
+                resultText = GutoolExceptionHandler.formatShortException(ex);
             }
 
             if ("输出结果".equals(button.getFunOutMode())) {
@@ -724,7 +724,9 @@ public class ScriptRunnerForm {
             addButton.setText("添加任务");
             addButton.setToolTipText("添加定时任务");
             addButton.addActionListener(e -> {
-                FuncTablePanelCronDialog dialog = new FuncTablePanelCronDialog(new GutoolFuncTabPanelDefineCron(), cron -> {
+                GutoolFuncTabPanelDefineCron addCron = new GutoolFuncTabPanelDefineCron();
+                addCron.setOrder(funcTabPanel.getCrontab().size());
+                FuncTablePanelCronDialog dialog = new FuncTablePanelCronDialog(addCron, cron -> {
                     funcTabPanel.addCrontab(cron);
                     Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
                     this.reloadCronTable();
@@ -738,7 +740,9 @@ public class ScriptRunnerForm {
             addButton.setText("添加接口");
             addButton.setToolTipText("添加定时任务");
             addButton.addActionListener(e -> {
-                FuncTablePanelHttpDialog dialog = new FuncTablePanelHttpDialog(new GutoolFuncTabPanelDefineHttp(), cron -> {
+                GutoolFuncTabPanelDefineHttp addHttp = new GutoolFuncTabPanelDefineHttp();
+                addHttp.setOrder(funcTabPanel.getHttpConfigs().size());
+                FuncTablePanelHttpDialog dialog = new FuncTablePanelHttpDialog(addHttp, cron -> {
                     funcTabPanel.addHttpConfig(cron);
                     Notifications.getInstance().show(Notifications.Type.SUCCESS, Notifications.Location.TOP_CENTER, "保存成功");
                     this.reloadHttpConfigTable();

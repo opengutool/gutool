@@ -8,7 +8,6 @@ import com.cronutils.model.definition.CronDefinition;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
-import com.formdev.flatlaf.util.SystemInfo;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
@@ -17,7 +16,7 @@ import io.github.opengutool.repository.GutoolPoQueryRepository;
 import io.github.opengutool.views.UiConsts;
 import io.github.opengutool.views.dialog.CronExampleDialog;
 import io.github.opengutool.views.util.ComponentUtil;
-import io.github.opengutool.views.util.SystemUtil;
+import io.github.opengutool.views.util.MacWindowUtil;
 import raven.toast.Notifications;
 
 import javax.swing.*;
@@ -70,14 +69,8 @@ public class FuncTablePanelCronDialog extends JDialog {
 
         setModal(true);
         setResizable(false);
-        if (SystemUtil.isMacOs() && SystemInfo.isMacFullWindowContentSupported) {
-            this.getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
-            this.getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
-            this.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
-            this.getRootPane().putClientProperty("apple.awt.windowTitleVisible", false);
-            GridLayoutManager gridLayoutManager = (GridLayoutManager) contentPane.getLayout();
-            gridLayoutManager.setMargin(new Insets(28, 10, 0, 10));
-        }
+        MacWindowUtil.configureMacFullscreenContent(this);
+        MacWindowUtil.configureMacInsets(contentPane, MacWindowUtil.DIALOG_WINDOW_INSETS);
 
 
         // 加载数据和设置监听器

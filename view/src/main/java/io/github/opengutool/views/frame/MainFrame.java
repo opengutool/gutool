@@ -1,10 +1,9 @@
 package io.github.opengutool.views.frame;
 
-import com.formdev.flatlaf.util.SystemInfo;
 import io.github.opengutool.views.UiConsts;
 import io.github.opengutool.views.component.TopMenuBar;
 import io.github.opengutool.views.util.ComponentUtil;
-import io.github.opengutool.views.util.SystemUtil;
+import io.github.opengutool.views.util.MacWindowUtil;
 
 import javax.swing.*;
 
@@ -27,12 +26,7 @@ public class MainFrame extends JFrame {
         this.setTitle(UiConsts.APP_NAME);
         FrameUtil.setFrameIcon(this);
 
-        if (SystemUtil.isMacOs() && SystemInfo.isMacFullWindowContentSupported) {
-            this.getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
-            this.getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
-            this.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
-            this.getRootPane().putClientProperty("apple.awt.windowTitleVisible", false);
-        }
+        MacWindowUtil.configureMacFullscreenContent(this);
 
         topMenuBar = TopMenuBar.getInstance();
         topMenuBar.init();
